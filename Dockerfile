@@ -42,6 +42,15 @@ ENV NEXT_PUBLIC_FF_API_ORIGIN=$NEXT_PUBLIC_FF_API_ORIGIN \
 ARG STRIPE_WEBHOOK_SIGNING_SECRET=whsec_placeholder
 ENV STRIPE_WEBHOOK_SIGNING_SECRET=$STRIPE_WEBHOOK_SIGNING_SECRET
 
+# /api/github/setup imports a lib that runs
+# `process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g,"\n")` at MODULE SCOPE, so
+# page-data collection throws when the var is undefined at build. A bare string is
+# enough — the Octokit/PEM parsing is lazy (inside the exported functions), so
+# nothing validates the key at build. The real key comes from Coolify at runtime.
+# NB: the var is GITHUB_PRIVATE_KEY (not GITHUB_APP_PRIVATE_KEY).
+ARG GITHUB_PRIVATE_KEY=placeholder
+ENV GITHUB_PRIVATE_KEY=$GITHUB_PRIVATE_KEY
+
 # "web..." builds @workspace/db first (its build script IS `prisma generate`),
 # then next build — dependency order handled by pnpm/turbo.
 RUN pnpm --filter "web..." build
