@@ -19,6 +19,10 @@ export const auth = betterAuth({
     `https://${process.env.DOMAIN_NAME}`,
     `https://www.${process.env.DOMAIN_NAME}`,
   ],
+  onAPIError: {
+    throw: false,
+    onError: (error) => console.error("[better-auth]", error),
+  },
   emailAndPassword,
   emailVerification,
   databaseHooks,
