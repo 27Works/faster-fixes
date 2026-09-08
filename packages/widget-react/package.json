@@ -1,18 +1,18 @@
 {
-  "name": "@fasterfixes/react",
-  "version": "0.0.10",
-  "description": "React feedback widget for FasterFixes. Drop-in component for collecting visual feedback with screenshots, element annotations, and inline comments.",
+  "name": "@27works/faster-fixes-react",
+  "version": "0.1.0",
+  "description": "Fork of @fasterfixes/react with scroll-aware screenshot capture. Drop-in component for collecting visual feedback with screenshots, element annotations, and inline comments.",
   "type": "module",
   "license": "MIT",
   "author": "FasterFixes <support@faster-fixes.com> (https://faster-fixes.com)",
-  "homepage": "https://faster-fixes.com",
+  "homepage": "https://github.com/27Works/faster-fixes/tree/main/packages/widget-react",
   "repository": {
     "type": "git",
-    "url": "https://github.com/manucoffin/faster-fixes.git",
+    "url": "https://github.com/27Works/faster-fixes.git",
     "directory": "packages/widget-react"
   },
   "bugs": {
-    "url": "https://github.com/manucoffin/faster-fixes/issues"
+    "url": "https://github.com/27Works/faster-fixes/issues"
   },
   "keywords": [
     "react",
@@ -61,6 +61,7 @@
     "dist",
     "!dist/**/*.map",
     "LICENSE",
+    "NOTICE",
     "README.md"
   ],
   "publishConfig": {

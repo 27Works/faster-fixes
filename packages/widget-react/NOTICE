@@ -1,0 +1,9 @@
+This package is a fork of @fasterfixes/react (https://github.com/manucoffin/faster-fixes),
+licensed under the MIT License. See LICENSE for the full text and original copyright.
+
+Modifications by 27Works:
+- Fixed screenshot capture to render the current scroll position instead of always
+  capturing the top of the page. See README.md for a known limitation of this fix
+  regarding `position: fixed` elements.
+
+Unless noted above, this package is otherwise unmodified from upstream.
