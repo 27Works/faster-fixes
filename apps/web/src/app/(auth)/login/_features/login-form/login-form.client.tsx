@@ -46,9 +46,7 @@ export function LoginForm() {
 
   const loginMutation = useMutation(
     trpc.auth.login.mutationOptions({
-      onError: (error) => {
-        console.error(JSON.stringify(error));
-        
+      onError: (error) => {       
         if (error.message === "EMAIL_NOT_VERIFIED") {
           setUnverifiedEmail(form.getValues("email"));
           return;
