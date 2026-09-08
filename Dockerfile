@@ -45,6 +45,9 @@ ENV STRIPE_WEBHOOK_SIGNING_SECRET=$STRIPE_WEBHOOK_SIGNING_SECRET
 ARG JIRA_TOKEN_ENCRYPTION_KEY=30b6006e0e340fe8c97004aba2f692eb73f0ee3489645007bbe6902c13ec71ba
 ENV JIRA_TOKEN_ENCRYPTION_KEY=$JIRA_TOKEN_ENCRYPTION_KEY
 
+ARG RESEND_API_KEY=re_placeholder
+ENV RESEND_API_KEY=$RESEND_API_KEY
+
 # /api/github/setup imports a lib that runs
 # `process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g,"\n")` at MODULE SCOPE, so
 # page-data collection throws when the var is undefined at build. A bare string is
