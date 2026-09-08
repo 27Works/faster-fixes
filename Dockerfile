@@ -95,7 +95,11 @@ RUN pnpm --filter "web..." build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=builder /app ./
+# Copy as the non-root `node` user. COPY defaults to root ownership, but we drop to
+# USER node below — so anything the app writes at RUNTIME (Fumadocs regenerating
+# apps/web/.source, Next's .next/cache) would hit "permission denied" on root-owned
+# files. --chown gives the runtime user ownership.
+COPY --from=builder --chown=node:node /app ./
 USER node
 EXPOSE 3000
 ENV PORT=3000 HOSTNAME=0.0.0.0
