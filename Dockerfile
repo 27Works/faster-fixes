@@ -34,6 +34,14 @@ ENV NEXT_PUBLIC_FF_API_ORIGIN=$NEXT_PUBLIC_FF_API_ORIGIN \
     NEXT_PUBLIC_IS_CLOUD=$NEXT_PUBLIC_IS_CLOUD \
     NEXT_PUBLIC_STORAGE_BASE_URL=$NEXT_PUBLIC_STORAGE_BASE_URL
 
+# The env validator requires Stripe vars in production even though self-hosted
+# never runs billing (the docs say leave them unset, but `next build` validates
+# eagerly). A placeholder satisfies the check; the value is never used. If more
+# Stripe vars error in sequence, add them here the same way. Check the env schema
+# (grep STRIPE_WEBHOOK_SIGNING_SECRET) to see the full required-in-prod set.
+ARG STRIPE_WEBHOOK_SIGNING_SECRET=whsec_placeholder
+ENV STRIPE_WEBHOOK_SIGNING_SECRET=$STRIPE_WEBHOOK_SIGNING_SECRET
+
 # "web..." builds @workspace/db first (its build script IS `prisma generate`),
 # then next build — dependency order handled by pnpm/turbo.
 RUN pnpm --filter "web..." build
