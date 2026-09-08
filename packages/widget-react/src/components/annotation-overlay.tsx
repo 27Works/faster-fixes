@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { domToBlob } from "modern-screenshot";
+import { domToCanvas } from "modern-screenshot";
 import { useFeedbackContext } from "../context.js";
 import { overlayHighlightStyle } from "../styles.js";
 
@@ -42,23 +42,44 @@ export function AnnotationOverlay() {
       setClickCoords({ x: e.clientX, y: e.clientY });
 
       // Capture screenshot asynchronously, store promise for submit to await
-      const capturePromise = domToBlob(document.body, {
-        width: window.innerWidth,
-        height: window.innerHeight,
-        scale: window.devicePixelRatio || 1,
-        style: {
-          transform: `translate(${-window.scrollX}px, ${-window.scrollY}px)`,
-          transformOrigin: "top left",
-        },
-        features: {
-          restoreScrollPosition: true,
-        },
-        // Inverted from html2canvas: return true to INCLUDE, false to EXCLUDE
-        filter: (el: Node) => {
-          if (el instanceof Element) return !el.hasAttribute("data-ff-widget");
-          return true;
-        },
-      }).catch((err) => {
+      const capturePromise = (async (): Promise<Blob | null> => {
+        const dpr = window.devicePixelRatio || 1;
+
+        // Render the whole page first (composites fixed elements at their real
+        // positions) then crop to the viewport below — modern-screenshot renders
+        // from 0,0, so a direct viewport-sized capture always shows the page top
+        // regardless of window.scrollY.
+        const fullCanvas = await domToCanvas(document.body, {
+          width: document.documentElement.scrollWidth,
+          height: document.documentElement.scrollHeight,
+          scale: dpr,
+          features: {
+            restoreScrollPosition: true,
+          },
+          // Inverted from html2canvas: return true to INCLUDE, false to EXCLUDE
+          filter: (el: Node) => {
+            if (el instanceof Element) return !el.hasAttribute("data-ff-widget");
+            return true;
+          },
+        });
+
+        const out = document.createElement("canvas");
+        out.width = window.innerWidth * dpr;
+        out.height = window.innerHeight * dpr;
+        out.getContext("2d")!.drawImage(
+          fullCanvas,
+          window.scrollX * dpr,
+          window.scrollY * dpr,
+          out.width,
+          out.height,
+          0,
+          0,
+          out.width,
+          out.height,
+        );
+
+        return new Promise<Blob | null>((resolve) => out.toBlob(resolve, "image/png"));
+      })().catch((err) => {
         console.warn("[faster-fixes] screenshot capture failed:", err);
         return null;
       });

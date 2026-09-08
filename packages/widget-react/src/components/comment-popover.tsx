@@ -6,7 +6,7 @@ import {
   flip,
   shift,
 } from "@floating-ui/react";
-import { domToBlob } from "modern-screenshot";
+import { domToCanvas } from "modern-screenshot";
 import { generateSelectors, captureElementContext, getBrowserInfo } from "@fasterfixes/core";
 import { useFeedbackContext } from "../context.js";
 import {
@@ -179,19 +179,40 @@ export function CommentPopover() {
 
       // Full capture too slow — retry without images/videos for a fast lightweight capture
       if (!screenshot) {
-        screenshot = await domToBlob(document.body, {
-          width: window.innerWidth,
-          height: window.innerHeight,
-          scale: window.devicePixelRatio || 1,
-          features: { restoreScrollPosition: true },
-          filter: (el: Node) => {
-            if (el instanceof Element && el.hasAttribute("data-ff-widget")) return false;
-            if (el instanceof HTMLImageElement) return false;
-            if (el instanceof HTMLVideoElement) return false;
-            if (el instanceof HTMLPictureElement) return false;
-            return true;
-          },
-        }).catch(() => null);
+        screenshot = await (async (): Promise<Blob | null> => {
+          const dpr = window.devicePixelRatio || 1;
+
+          const fullCanvas = await domToCanvas(document.body, {
+            width: document.documentElement.scrollWidth,
+            height: document.documentElement.scrollHeight,
+            scale: dpr,
+            features: { restoreScrollPosition: true },
+            filter: (el: Node) => {
+              if (el instanceof Element && el.hasAttribute("data-ff-widget")) return false;
+              if (el instanceof HTMLImageElement) return false;
+              if (el instanceof HTMLVideoElement) return false;
+              if (el instanceof HTMLPictureElement) return false;
+              return true;
+            },
+          });
+
+          const out = document.createElement("canvas");
+          out.width = window.innerWidth * dpr;
+          out.height = window.innerHeight * dpr;
+          out.getContext("2d")!.drawImage(
+            fullCanvas,
+            window.scrollX * dpr,
+            window.scrollY * dpr,
+            out.width,
+            out.height,
+            0,
+            0,
+            out.width,
+            out.height,
+          );
+
+          return new Promise<Blob | null>((resolve) => out.toBlob(resolve, "image/png"));
+        })().catch(() => null);
       }
 
       if (!screenshot) return;
