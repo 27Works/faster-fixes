@@ -19,11 +19,6 @@ export const auth = betterAuth({
     `https://${process.env.DOMAIN_NAME}`,
     `https://www.${process.env.DOMAIN_NAME}`,
   ],
-  logger: { level: "debug" },
-  onAPIError: {
-    throw: false,
-    onError: (error) => console.error("[better-auth]", error),
-  },
   emailAndPassword,
   emailVerification,
   databaseHooks,
@@ -46,7 +41,7 @@ export const auth = betterAuth({
     cookieCache: {
       enabled: true,
       maxAge: 5 * 60,
-      strategy: "jwt",
+      strategy: "jwe",
     },
   },
   user: {
