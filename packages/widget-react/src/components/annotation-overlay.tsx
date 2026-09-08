@@ -46,6 +46,10 @@ export function AnnotationOverlay() {
         width: window.innerWidth,
         height: window.innerHeight,
         scale: window.devicePixelRatio || 1,
+        style: {
+          transform: `translate(${-window.scrollX}px, ${-window.scrollY}px)`,
+          transformOrigin: "top left",
+        },
         features: {
           restoreScrollPosition: true,
         },
