@@ -57,6 +57,7 @@ jobs:
             NEXT_PUBLIC_FF_API_ORIGIN=${{ vars.NEXT_PUBLIC_FF_API_ORIGIN }}
             NEXT_PUBLIC_IS_CLOUD=false
             NEXT_PUBLIC_STORAGE_BASE_URL=${{ vars.NEXT_PUBLIC_STORAGE_BASE_URL }}
+            NEXT_PUBLIC_GITHUB_APP_NAME=${{ vars.NEXT_PUBLIC_GITHUB_APP_NAME }}
 
       # Migrate the remote Supabase DB from CI — nothing DB-related runs on the server.
       - uses: pnpm/action-setup@v4
