@@ -19,6 +19,7 @@ export const auth = betterAuth({
     `https://${process.env.DOMAIN_NAME}`,
     `https://www.${process.env.DOMAIN_NAME}`,
   ],
+  logger: { level: "debug" },
   onAPIError: {
     throw: false,
     onError: (error) => console.error("[better-auth]", error),
