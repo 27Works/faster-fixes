@@ -8,7 +8,7 @@ export const emailAndPassword: NonNullable<
   BetterAuthOptions["emailAndPassword"]
 > = {
   enabled: true,
-  requireEmailVerification: true,
+  requireEmailVerification: false,
   autoSignIn: true,
 
   sendResetPassword: async ({ user, url, token }, request) => {
