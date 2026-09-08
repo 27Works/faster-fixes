@@ -48,6 +48,24 @@ ENV JIRA_TOKEN_ENCRYPTION_KEY=$JIRA_TOKEN_ENCRYPTION_KEY
 ARG RESEND_API_KEY=re_placeholder
 ENV RESEND_API_KEY=$RESEND_API_KEY
 
+# BetterAuth is configured at MODULE SCOPE and, in production, throws if
+# BETTER_AUTH_SECRET is unset/default. Placeholder for build; REAL secret at
+# runtime (Coolify). BETTER_AUTH_URL is only a build-time warning — set it to keep
+# logs clean; the runtime value from Coolify wins either way.
+ARG BETTER_AUTH_SECRET=placeholder-build-secret
+ARG BETTER_AUTH_URL=https://placeholder.local
+ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET \
+    BETTER_AUTH_URL=$BETTER_AUTH_URL
+ 
+# Every integration module (GitHub, Linear, Jira) is imported into the build graph
+# regardless of which you use, so their env guards all fire. Linear validates
+# LINEAR_TOKEN_ENCRYPTION_KEY at MODULE SCOPE and throws if unset. 64-hex placeholder
+# (valid hex, 32 bytes) for build. IMPORTANT: this same check runs at RUNTIME too,
+# so you must ALSO set LINEAR_TOKEN_ENCRYPTION_KEY in Coolify — a real
+# `openssl rand -hex 32` is fine even though Linear stays unused.
+ARG LINEAR_TOKEN_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+ENV LINEAR_TOKEN_ENCRYPTION_KEY=$LINEAR_TOKEN_ENCRYPTION_KEY
+
 # /api/github/setup imports a lib that runs
 # `process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g,"\n")` at MODULE SCOPE, so
 # page-data collection throws when the var is undefined at build. A bare string is
