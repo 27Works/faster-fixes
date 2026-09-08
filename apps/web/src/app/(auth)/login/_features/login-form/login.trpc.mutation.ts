@@ -21,6 +21,8 @@ export const loginMutation = publicProcedure
 
       return data.user;
     } catch (error) {
+      console.log(JSON.stringify(error || {}));
+      
       if (error instanceof TRPCError) {
         throw error;
       }
