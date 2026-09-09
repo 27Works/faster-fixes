@@ -2,6 +2,7 @@ import { checkRateLimit } from "@/server/api/check-rate-limit";
 import { resolveProject } from "@/server/api/resolve-project";
 import { validateOrigin } from "@/server/api/validate-origin";
 import { validateReviewer } from "@/server/api/validate-reviewer";
+import { inngest } from "@/server/inngest";
 import { s3Client } from "@/server/storage";
 import { createAsset } from "@/server/storage/create-asset";
 import { getSignedAssetUrl } from "@/server/storage/get-signed-asset-url";
@@ -120,6 +121,13 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   const screenshotUrl = updated.screenshot
     ? await getSignedAssetUrl(updated.screenshot)
     : null;
+
+  // Fire-and-forget: backfill the screenshot into an already-created GitHub
+  // issue, since issue creation almost always wins the race against this
+  // upload (see feedback/created).
+  inngest
+    .send({ name: "feedback/screenshot-attached", data: { feedbackId: id } })
+    .catch(() => {});
 
   return NextResponse.json({ screenshotUrl });
 }

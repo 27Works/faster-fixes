@@ -9,6 +9,7 @@ import { notifySlackFeedbackCreated } from "@/server/inngest/notify-slack-feedba
 import { refreshJiraInstallationWebhooks } from "@/server/inngest/refresh-jira-installation-webhooks";
 import { refreshJiraWebhooks } from "@/server/inngest/refresh-jira-webhooks";
 import { sendWelcomeEmail } from "@/server/inngest/send-welcome-email";
+import { syncFeedbackScreenshotToGitHub } from "@/server/inngest/sync-feedback-screenshot-to-github";
 import { syncFeedbackStatusToGitHub } from "@/server/inngest/sync-feedback-status-to-github";
 import { syncFeedbackStatusToJira } from "@/server/inngest/sync-feedback-status-to-jira";
 import { syncFeedbackStatusToLinear } from "@/server/inngest/sync-feedback-status-to-linear";
@@ -27,6 +28,7 @@ export const { GET, POST, PUT } = serve({
     createGitHubIssue,
     syncGitHubIssueStatus,
     syncFeedbackStatusToGitHub,
+    syncFeedbackScreenshotToGitHub,
     createLinearIssue,
     syncLinearIssueStatus,
     syncFeedbackStatusToLinear,
