@@ -1,6 +1,6 @@
 {
-  "name": "@fasterfixes/react",
-  "version": "0.1.0",
+  "name": "@27works/faster-fixes-react",
+  "version": "0.2.0",
   "description": "Fork of @fasterfixes/react with scroll-aware screenshot capture. Drop-in component for collecting visual feedback with screenshots, element annotations, and inline comments.",
   "type": "module",
   "license": "MIT",
