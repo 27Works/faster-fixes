@@ -4,12 +4,21 @@ import { Octokit } from "@octokit/core";
 import { isCloud } from "@/utils/environment/env";
 import { requireEnv } from "@/utils/environment/require-env";
 
+// Hosting panels (e.g. Coolify) can store a multi-line PEM with wrapping
+// quotes or doubled backslashes before each "n", which the plain "\\n"
+// replacement doesn't undo.
+function normalizePrivateKey(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .replace(/\\+n/g, "\n");
+}
+
 let privateKey: string | undefined;
 function getPrivateKey() {
-  return (privateKey ??= requireEnv(
-    "GITHUB_PRIVATE_KEY",
-    process.env.GITHUB_PRIVATE_KEY,
-  ).replace(/\\n/g, "\n"));
+  return (privateKey ??= normalizePrivateKey(
+    requireEnv("GITHUB_PRIVATE_KEY", process.env.GITHUB_PRIVATE_KEY),
+  ));
 }
 
 if (isCloud()) getPrivateKey();
