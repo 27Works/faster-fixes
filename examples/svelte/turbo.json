@@ -1,0 +1,11 @@
+{
+  "$schema": "https://turborepo.dev/schema.v2.json",
+  "extends": ["//"],
+  "tasks": {
+    "dev": {
+      // The example resolves `@fasterfixes/svelte` from its build output.
+      "dependsOn": ["^build"],
+      "env": ["NEXT_PUBLIC_FF_API_KEY", "NEXT_PUBLIC_FF_API_ORIGIN"]
+    }
+  }
+}

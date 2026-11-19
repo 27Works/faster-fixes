@@ -1,11 +1,28 @@
+import type { Route } from "next";
+import Link from "next/link";
+
 const cards = [
   {
     title: "Screenshot + annotated coordinates",
-    body: "Every report ships with a screenshot of the page exactly as the client saw it, plus the annotated coordinates and visible viewport. The same baseline Markup.io captures — included on every plan, including self-hosted.",
+    body: (
+      <>
+        Clients leave an{" "}
+        <Link
+          href={"/features/website-annotation" as Route}
+          className="text-foreground underline underline-offset-4 hover:no-underline"
+        >
+          annotation on any page
+        </Link>{" "}
+        of the live site, and every report ships with a screenshot of the page
+        exactly as they saw it, plus the annotated coordinates and visible
+        viewport. The same baseline Markup.io captures, included on every plan,
+        including self-hosted.
+      </>
+    ),
   },
   {
     title: "CSS selector + React component path",
-    body: "FasterFixes captures the React component name, props, and DOM selector at the click point. Developers receive a report that maps to the codebase, not a pixel coordinate. Markup.io stops at coordinates and a screenshot.",
+    body: "FasterFixes captures the DOM selector at the click point, plus the React component name and props on React sites. Developers receive a report that maps to the codebase, not a pixel coordinate. Markup.io stops at coordinates and a screenshot.",
   },
   {
     title: "Browser, OS, viewport context",
@@ -13,7 +30,7 @@ const cards = [
   },
   {
     title: "Structured output to GitHub, Linear, Jira, or MCP",
-    body: "Each feedback item is a structured task. Sync to GitHub, Linear, or Jira Cloud with workflow-state-aware two-way updates, or expose it to Claude Code, Cursor, and Codex via the built-in MCP server. Markup.io reserves integrations for Enterprise.",
+    body: "Each feedback item is a structured task. Sync to GitHub, Linear, or Jira Cloud with workflow-state-aware two-way updates, or expose it to Claude Code, Cursor, and Codex via the built-in MCP server. Markup.io has no native tracker sync and relies on Zapier.",
   },
 ];
 
@@ -22,7 +39,7 @@ export function MarkupIoCapabilitiesSection() {
     <section className="w-full py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             What lands in every report
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
@@ -32,12 +49,9 @@ export function MarkupIoCapabilitiesSection() {
 
         <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
           {cards.map((card) => (
-            <div
-              key={card.title}
-              className="bg-muted/30 rounded-xl border p-7"
-            >
+            <div key={card.title} className="rounded-xl border bg-muted/30 p-7">
               <h3 className="text-lg font-semibold">{card.title}</h3>
-              <p className="text-muted-foreground mt-3 leading-relaxed">
+              <p className="mt-3 leading-relaxed text-muted-foreground">
                 {card.body}
               </p>
             </div>

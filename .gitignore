@@ -4,6 +4,12 @@
 node_modules
 .pnp
 .pnp.js
+# pnpm places its content-addressable store here when no global store is configured.
+.pnpm-store
+
+# Local storage runtime data
+/storage/
+/apps/web/storage/
 
 # Local env files
 .env
@@ -14,6 +20,10 @@ node_modules
 
 # Testing
 coverage
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 
 # Turbo
 .turbo
@@ -27,6 +37,9 @@ out/
 build
 dist
 .source
+
+# The player document's bundle, built by `pnpm build:recording-player`
+/apps/web/public/recording-player/
 
 
 # Debug
@@ -50,5 +63,4 @@ _internal/
 
 # Skill eval workspaces
 packages/skills/*-workspace/
-# Added by code-review-graph
-.code-review-graph/
+.claude/worktrees/

@@ -1,0 +1,208 @@
+---
+title: Control the Widget
+description: Show, hide and read the state of the widget from your own code, with any embed.
+---
+
+Every embed exposes the same actions and values. React and Vue return them from `useFeedback`, called in any component inside the provider or plugin. Angular returns them from `injectFeedback`, called in any constructor or field initializer below `provideFasterFixes`, with the three values as read-only signals. Svelte returns them from `getFeedback`, called in any component under the root that calls `initFasterFixes`, with the three values as reactive properties: read them as `feedback.isVisible` and do not destructure them. The script embed returns them on the instance from `init`, also available as `window.FasterFixes.instance` with the CDN script.
+
+## Contract
+
+| Member            | Type             | Description                                     |
+| ----------------- | ---------------- | ----------------------------------------------- |
+| `show`            | `() => void`     | Shows the widget after `hide`                   |
+| `hide`            | `() => void`     | Removes the widget from the page until `show`   |
+| `isVisible`       | `boolean`        | `true` while the widget is on the page          |
+| `startAnnotation` | `() => void`     | Shows the widget and enters annotation mode     |
+| `feedbackItems`   | `FeedbackItem[]` | The Feedback items of the Project loaded so far |
+| `togglePins`      | `() => void`     | Hides or shows every feedback pin on the page   |
+| `showPins`        | `boolean`        | `true` while pins are shown                     |
+
+The script embed instance also exposes `subscribe(listener)`, which runs the listener after a value changes and returns an unsubscribe function, and `destroy()`, which removes the widget.
+
+## Examples
+
+### Custom trigger button
+
+Start annotation from your own UI. The floating button stays on the page.
+
+<Tabs groupId="embed" items={["React", "Vue", "Angular", "Svelte", "Script embed"]} persist>
+<Tab value="React">
+
+```tsx
+import { useFeedback } from "@fasterfixes/react";
+
+function FeedbackTrigger() {
+  const { startAnnotation, feedbackItems } = useFeedback();
+
+  return (
+    <button onClick={() => startAnnotation()}>
+      Leave feedback ({feedbackItems.length})
+    </button>
+  );
+}
+```
+
+</Tab>
+<Tab value="Vue">
+
+```vue
+<script setup lang="ts">
+import { useFeedback } from "@fasterfixes/vue";
+
+const { startAnnotation, feedbackItems } = useFeedback();
+</script>
+
+<template>
+  <button type="button" @click="startAnnotation">
+    Leave feedback ({{ feedbackItems.length }})
+  </button>
+</template>
+```
+
+</Tab>
+<Tab value="Angular">
+
+```ts
+import { Component } from "@angular/core";
+import { injectFeedback } from "@fasterfixes/angular";
+
+@Component({
+  selector: "app-feedback-trigger",
+  template: `
+    <button type="button" (click)="feedback.startAnnotation()">
+      Leave feedback ({{ feedback.feedbackItems().length }})
+    </button>
+  `,
+})
+export class FeedbackTrigger {
+  protected readonly feedback = injectFeedback();
+}
+```
+
+</Tab>
+<Tab value="Svelte">
+
+```svelte
+<script lang="ts">
+  import { getFeedback } from "@fasterfixes/svelte";
+
+  const feedback = getFeedback();
+</script>
+
+<button type="button" onclick={feedback.startAnnotation}>
+  Leave feedback ({feedback.feedbackItems.length})
+</button>
+```
+
+</Tab>
+<Tab value="Script embed">
+
+```html
+<button type="button" id="feedback-trigger">Leave feedback (0)</button>
+
+<script>
+  const widget = window.FasterFixes.init({ projectId: "proj_your_project_id" });
+  const trigger = document.getElementById("feedback-trigger");
+
+  trigger.addEventListener("click", () => widget.startAnnotation());
+  widget.subscribe(() => {
+    trigger.textContent = `Leave feedback (${widget.feedbackItems.length})`;
+  });
+</script>
+```
+
+</Tab>
+</Tabs>
+
+### Toggle pins
+
+Let users show or hide feedback pins on the page.
+
+<Tabs groupId="embed" items={["React", "Vue", "Angular", "Svelte", "Script embed"]} persist>
+<Tab value="React">
+
+```tsx
+import { useFeedback } from "@fasterfixes/react";
+
+function PinToggle() {
+  const { togglePins, showPins } = useFeedback();
+
+  return (
+    <button onClick={togglePins}>
+      {showPins ? "Hide" : "Show"} feedback pins
+    </button>
+  );
+}
+```
+
+</Tab>
+<Tab value="Vue">
+
+```vue
+<script setup lang="ts">
+import { useFeedback } from "@fasterfixes/vue";
+
+const { togglePins, showPins } = useFeedback();
+</script>
+
+<template>
+  <button type="button" @click="togglePins">
+    {{ showPins ? "Hide" : "Show" }} feedback pins
+  </button>
+</template>
+```
+
+</Tab>
+<Tab value="Angular">
+
+```ts
+import { Component } from "@angular/core";
+import { injectFeedback } from "@fasterfixes/angular";
+
+@Component({
+  selector: "app-pin-toggle",
+  template: `
+    <button type="button" (click)="feedback.togglePins()">
+      {{ feedback.showPins() ? "Hide" : "Show" }} feedback pins
+    </button>
+  `,
+})
+export class PinToggle {
+  protected readonly feedback = injectFeedback();
+}
+```
+
+</Tab>
+<Tab value="Svelte">
+
+```svelte
+<script lang="ts">
+  import { getFeedback } from "@fasterfixes/svelte";
+
+  const feedback = getFeedback();
+</script>
+
+<button type="button" onclick={feedback.togglePins}>
+  {feedback.showPins ? "Hide" : "Show"} feedback pins
+</button>
+```
+
+</Tab>
+<Tab value="Script embed">
+
+```html
+<button type="button" id="pin-toggle">Hide feedback pins</button>
+
+<script>
+  const widget = window.FasterFixes.init({ projectId: "proj_your_project_id" });
+  const toggle = document.getElementById("pin-toggle");
+
+  toggle.addEventListener("click", () => widget.togglePins());
+  widget.subscribe(() => {
+    toggle.textContent = `${widget.showPins ? "Hide" : "Show"} feedback pins`;
+  });
+</script>
+```
+
+</Tab>
+</Tabs>

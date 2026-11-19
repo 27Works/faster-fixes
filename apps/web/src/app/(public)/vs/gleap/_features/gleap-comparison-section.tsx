@@ -1,4 +1,16 @@
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
 import { CheckIcon, XIcon } from "lucide-react";
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import { formatAmount } from "../../../_helpers/format-competitor-price";
+
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const { hobby, growth, pro: gleapPro } = COMPETITOR_PRICES.gleap.plans;
+const billedYearly = (amount: number) => `${formatAmount(amount, "USD")}/mo`;
 
 type Cell = string | { type: "yes" | "no"; note?: string };
 
@@ -14,8 +26,8 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Pricing model",
     cells: [
-      "$0 self-hosted / $20/mo Pro (up to 5 members)",
-      "$39/mo (1 member only) / $149/mo Team (unlimited members)",
+      `$0 self-hosted / $${proPrice}/mo Pro (up to ${proPlan.seats} members)`,
+      `From ${billedYearly(hobby.billedYearlyAmount)} Hobby (${hobby.seats} seat) / ${billedYearly(growth.billedYearlyAmount)} Growth (${growth.seats} seats) / ${billedYearly(gleapPro.amount)} Pro (unlimited seats), billed yearly`,
     ],
   },
   {
@@ -23,22 +35,33 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     cells: [{ type: "yes" }, { type: "no" }],
   },
   {
-    label: "React / Next.js SDK",
+    label: "Web install",
     cells: [
-      { type: "yes", note: "Component tree capture" },
+      "Script tag or React package · component tree on React sites",
       "JavaScript SDK (no component tree)",
     ],
   },
   {
     label: "AI chatbot",
-    cells: [
-      { type: "no" },
-      { type: "yes", note: "Kai — agent mode + copilot" },
-    ],
+    cells: [{ type: "no" }, { type: "yes", note: "Kai: agent mode + copilot" }],
   },
   {
     label: "Ticketing / shared inbox",
     cells: [{ type: "no" }, { type: "yes" }],
+  },
+  {
+    label: "Video review (uploaded videos)",
+    cells: [
+      { type: "yes", note: "Timestamped · area on the frame" },
+      { type: "no" },
+    ],
+  },
+  {
+    label: "Session replay",
+    cells: [
+      { type: "yes", note: "Last minute before each feedback · all plans" },
+      { type: "yes", note: "Last 10 to 15 min before each report · Growth+" },
+    ],
   },
   {
     label: "Mobile SDKs",
@@ -54,7 +77,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "IDE integration",
     cells: [
-      { type: "yes", note: "MCP — Claude Code / Cursor / Codex" },
+      { type: "yes", note: "MCP: Claude Code / Cursor / Codex" },
       { type: "no" },
     ],
   },
@@ -63,9 +86,16 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     cells: [
       {
         type: "yes",
-        note: "GitHub, Linear, Jira · two-way, workflow-state aware",
+        note: "GitHub, Linear, Jira, Trello · two-way, workflow-state aware",
       },
       { type: "yes", note: "Jira, Linear, GitHub, Asana, ClickUp, +" },
+    ],
+  },
+  {
+    label: "Trello sync",
+    cells: [
+      { type: "yes", note: "Bidirectional · status follows the mapped lists" },
+      { type: "yes", note: "Creates cards" },
     ],
   },
   {
@@ -81,17 +111,17 @@ const headers = ["FasterFixes", "Gleap"] as const;
 
 function renderCell(cell: Cell) {
   if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
+    return <span className="text-sm text-muted-foreground">{cell}</span>;
   }
   return (
     <div className="flex flex-col gap-1">
       {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
+        <CheckIcon className="size-5 text-success" aria-label="Yes" />
       ) : (
-        <XIcon className="text-destructive size-5" aria-label="No" />
+        <XIcon className="size-5 text-destructive" aria-label="No" />
       )}
       {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
+        <span className="text-xs text-muted-foreground">{cell.note}</span>
       )}
     </div>
   );
@@ -99,10 +129,10 @@ function renderCell(cell: Cell) {
 
 export function GleapComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
+    <section className="w-full border-y bg-muted/30 py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Compare
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">

@@ -2,8 +2,10 @@ import type {
   ApiError,
   CreateFeedbacksParams,
   CreateFeedbacksResponse,
+  GetFeedbackJsonResponse,
   ListFeedbacksJsonResponse,
   ListFeedbacksParams,
+  ListVideosResponse,
   UpdateStatusResponse,
 } from "./api-types";
 
@@ -47,6 +49,7 @@ export class FasterFixesClient {
     searchParams.set("project", this.projectId);
     if (params?.status) searchParams.set("status", params.status);
     if (params?.page_url) searchParams.set("page_url", params.page_url);
+    if (params?.video) searchParams.set("video", params.video);
     if (params?.format) searchParams.set("format", params.format);
 
     const format = params?.format ?? "json";
@@ -58,6 +61,25 @@ export class FasterFixesClient {
 
     return this.request<ListFeedbacksJsonResponse>(
       `/api/v1/agent/feedbacks?${searchParams.toString()}`,
+    );
+  }
+
+  async getFeedbackMarkdown(feedbackId: string): Promise<string> {
+    return this.request<string>(
+      `/api/v1/agent/feedbacks/${feedbackId}?format=markdown`,
+    );
+  }
+
+  async getFeedback(feedbackId: string): Promise<GetFeedbackJsonResponse> {
+    return this.request<GetFeedbackJsonResponse>(
+      `/api/v1/agent/feedbacks/${feedbackId}`,
+    );
+  }
+
+  async listVideos(): Promise<ListVideosResponse> {
+    const searchParams = new URLSearchParams({ project: this.projectId });
+    return this.request<ListVideosResponse>(
+      `/api/v1/agent/videos?${searchParams.toString()}`,
     );
   }
 

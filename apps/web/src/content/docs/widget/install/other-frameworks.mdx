@@ -1,0 +1,93 @@
+---
+title: Other Frameworks
+description: Install the Faster Fixes widget on Astro, Solid, Preact or any other stack.
+---
+
+Get your Project ID in [Project Settings](https://faster-fixes.com/settings). Every snippet below accepts the options of the [script embed](/docs/widget/install/script-embed#options).
+
+## Astro
+
+Add the script tag to your shared layout:
+
+```astro title="src/layouts/Layout.astro"
+<html lang="en">
+  <head>
+    <script
+      is:inline
+      src="https://cdn.jsdelivr.net/npm/@fasterfixes/widget@1/dist/widget.iife.js"
+      data-project-id="proj_your_project_id"
+      defer
+    ></script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
+```
+
+## Solid
+
+```package-install
+@fasterfixes/widget
+```
+
+Initialize the widget in the root component:
+
+```tsx title="src/App.tsx"
+import { init } from "@fasterfixes/widget";
+import { onCleanup, onMount } from "solid-js";
+
+export function App() {
+  onMount(() => {
+    const widget = init({ projectId: "proj_your_project_id" });
+    onCleanup(() => widget.destroy());
+  });
+
+  return <main>{/* your app */}</main>;
+}
+```
+
+## Preact
+
+Use the [React embed](/docs/widget/install/react) through `preact/compat`:
+
+```package-install
+@fasterfixes/react
+```
+
+With Vite, `@preact/preset-vite` handles the `react` aliases. With another bundler, alias `react`, `react-dom` and `react/jsx-runtime` to `preact/compat`.
+
+```tsx title="src/main.tsx"
+import { FeedbackProvider } from "@fasterfixes/react";
+import { render } from "preact";
+import { App } from "./app";
+
+render(
+  <FeedbackProvider projectId="proj_your_project_id">
+    <App />
+  </FeedbackProvider>,
+  document.getElementById("app")!,
+);
+```
+
+## Vanilla JavaScript
+
+With a bundler, call `init` once in your entry file:
+
+```package-install
+@fasterfixes/widget
+```
+
+```ts title="src/main.ts"
+import { init } from "@fasterfixes/widget";
+
+const widget = init({ projectId: "proj_your_project_id" });
+```
+
+Without a bundler, use the [script embed](/docs/widget/install/script-embed) tag.
+
+## Next steps
+
+- Drive the widget from your own controls in [Control the Widget](/docs/widget/control-the-widget).
+- Theme the widget and replace its strings in [Customization](/docs/widget/customization).
+- Build your own feedback UI on the [Headless client](/docs/widget/headless-client).

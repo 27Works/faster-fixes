@@ -3,7 +3,7 @@ title: GitHub integration setup
 description: Set up the Faster Fixes GitHub integration to automatically create GitHub issues from feedback and sync status bidirectionally.
 ---
 
-Faster Fixes integrates with GitHub to automatically create issues when new feedback is submitted and sync status changes between the dashboard and GitHub. For a product overview, see the [GitHub integration overview](/integrations/github).
+Faster Fixes creates a GitHub issue for each new feedback and syncs status between the dashboard and GitHub. For a product overview, see the [GitHub integration overview](/integrations/github).
 
 ## Setup
 
@@ -14,34 +14,43 @@ Faster Fixes integrates with GitHub to automatically create issues when new feed
 
 ## Auto-create issues
 
-When enabled (on by default), new feedback automatically creates a GitHub issue in the linked repository. The issue includes:
+With auto-create on, the default, each new feedback creates an issue in the linked repository. The issue includes:
 
 - Feedback comment
 - Page URL
 - DOM selector
+- Link to play the [Recording](/docs/widget/recording) and its duration, when the feedback has one
 - Browser info
 - Link to the screenshot
-- Console logs and network requests (in a collapsible section)
+- Console logs and network requests, in a collapsible section
+
+## Recording
+
+The **Recording** line links to the player in the dashboard. The link requires a Faster Fixes login, so an issue in a public repository exposes nothing of the Recording.
+
+With a Recording, the collapsed **Diagnostics** section becomes a collapsed **Timeline**: the Reviewer's steps, console logs and network requests on one clock, ending with the element selection. A timeline too long for the issue drops its earliest entries and states how many. If the Recording cannot be read, the issue shows Diagnostics instead.
+
+An automatic issue waits up to 30 seconds for the Recording to upload. A manual issue is created at once.
+
+An issue is written once. A Recording that arrives later is not added, and removing a Recording in the dashboard leaves the timeline already written in the issue.
 
 ## Default labels
 
-Issues are tagged with `faster-fixes` by default. You can customize labels in the GitHub link settings.
+Issues are tagged `faster-fixes` by default. Change the labels in the GitHub link settings.
 
 ## Bidirectional status sync
 
-Status changes propagate in both directions:
-
-| Action | Result |
-|--------|--------|
-| Feedback marked **resolved** or **closed** in dashboard | GitHub issue is closed |
-| Feedback marked **new** or **in_progress** in dashboard | GitHub issue is reopened |
-| GitHub issue **closed** | Feedback status updated to closed |
-| GitHub issue **reopened** | Feedback status updated to new |
+| Action                                                  | Result                            |
+| ------------------------------------------------------- | --------------------------------- |
+| Feedback marked **resolved** or **closed** in dashboard | GitHub issue is closed            |
+| Feedback marked **new** or **in_progress** in dashboard | GitHub issue is reopened          |
+| GitHub issue **closed**                                 | Feedback status updated to closed |
+| GitHub issue **reopened**                               | Feedback status updated to new    |
 
 ## Manual issue creation
 
-You can create a GitHub issue manually from any feedback item in the Inbox using the **Create Issue** action.
+Create an issue from any feedback in the Task board with the **Create Issue** action.
 
 ## Unlinking
 
-You can unlink a repository from **[Project Settings](/settings) → GitHub** at any time. Existing issue links are preserved but sync stops.
+Unlink a repository from **[Project Settings](/settings) → GitHub**. Existing issue links are kept, and sync stops.

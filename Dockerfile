@@ -1,108 +1,50 @@
 # syntax=docker/dockerfile:1
-# FasterFixes web app — built in CI, run as a prebuilt image on Coolify.
-# Add this at the REPO ROOT of your fork. Pure addition (no upstream edits).
-#
-# CONFIRM before first build:
-#  - the web package NAME (from apps/web/package.json "name") — placeholder: "web"
-#  - the pnpm version (root package.json "packageManager") — placeholder: 10.4.1
-#  - Node major (Prisma 7 needs 18+) — using 22 LTS
 
-# ---- Base ----
-FROM node:22-alpine AS base
-RUN apk add --no-cache libc6-compat openssl   # openssl: Prisma engine on alpine
-RUN corepack enable && corepack prepare pnpm@10.4.1 --activate
-
-# ---- Prune: minimal monorepo subset for the web app (fast, cache-friendly) ----
-FROM base AS pruner
+FROM node:22-bookworm-slim AS base
+ENV PNPM_HOME=/pnpm \
+    COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
+    NEXT_TELEMETRY_DISABLED=1 \
+    CHECKPOINT_DISABLE=1
+# Prisma's schema engine, used by `migrate deploy`, links against OpenSSL.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable
 WORKDIR /app
+
+FROM base AS build
+# The root `prepare` script installs Git hooks, which a build has no use for.
+ENV HUSKY=0
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm fetch --frozen-lockfile
 COPY . .
-RUN pnpm dlx turbo prune web --docker
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile --offline --filter "web..."
 
-# ---- Install + build ----
-FROM base AS builder
-WORKDIR /app
-COPY --from=pruner /app/out/json/ .
-RUN pnpm install --frozen-lockfile
-COPY --from=pruner /app/out/full/ .
-
-# NEXT_PUBLIC_* are inlined by Next at BUILD time, so they must be present here.
-# They are NOT secret (public URLs); passed as build args from the CI workflow.
-ARG NEXT_PUBLIC_FF_API_ORIGIN
+# Inlined into the build: changing any of them requires a rebuild.
+ARG BASE_URL
 ARG NEXT_PUBLIC_IS_CLOUD=false
+ARG NEXT_PUBLIC_FF_API_ORIGIN
 ARG NEXT_PUBLIC_STORAGE_BASE_URL
 ARG NEXT_PUBLIC_GITHUB_APP_NAME
-ENV NEXT_PUBLIC_FF_API_ORIGIN=$NEXT_PUBLIC_FF_API_ORIGIN \
-    NEXT_PUBLIC_IS_CLOUD=$NEXT_PUBLIC_IS_CLOUD \
-    NEXT_PUBLIC_STORAGE_BASE_URL=$NEXT_PUBLIC_STORAGE_BASE_URL \
-    NEXT_PUBLIC_GITHUB_APP_NAME=$NEXT_PUBLIC_GITHUB_APP_NAME
+ARG STORAGE_BUCKET_NAME
+# `web...` also builds the workspace packages and the Prisma client, in dependency
+# order. The app directory is moved out so the runtime stage copies it once, with
+# its own owner.
+RUN pnpm --filter "web..." build \
+    && rm -rf apps/web/.next/cache \
+    && mv apps/web /web
 
-# The env validator requires Stripe vars in production even though self-hosted
-# never runs billing (the docs say leave them unset, but `next build` validates
-# eagerly). A placeholder satisfies the check; the value is never used. If more
-# Stripe vars error in sequence, add them here the same way. Check the env schema
-# (grep STRIPE_WEBHOOK_SIGNING_SECRET) to see the full required-in-prod set.
-ARG STRIPE_WEBHOOK_SIGNING_SECRET=whsec_placeholder
-ENV STRIPE_WEBHOOK_SIGNING_SECRET=$STRIPE_WEBHOOK_SIGNING_SECRET
-
-ARG JIRA_TOKEN_ENCRYPTION_KEY=30b6006e0e340fe8c97004aba2f692eb73f0ee3489645007bbe6902c13ec71ba
-ENV JIRA_TOKEN_ENCRYPTION_KEY=$JIRA_TOKEN_ENCRYPTION_KEY
-
-ARG RESEND_API_KEY=re_placeholder
-ARG R2_ACCOUNT_ID=X
-ARG R2_ACCESS_KEY_ID=X
-ARG R2_SECRET_ACCESS_KEY=X
-ENV RESEND_API_KEY=$RESEND_API_KEY
-ENV R2_ACCOUNT_ID=$R2_ACCOUNT_ID
-ENV R2_ACCESS_KEY_ID=$R2_ACCESS_KEY_ID
-ENV R2_SECRET_ACCESS_KEY=$R2_SECRET_ACCESS_KEY
-
-# BetterAuth is configured at MODULE SCOPE and, in production, throws if
-# BETTER_AUTH_SECRET is unset/default. Placeholder for build; REAL secret at
-# runtime (Coolify). BETTER_AUTH_URL is only a build-time warning — set it to keep
-# logs clean; the runtime value from Coolify wins either way.
-ARG BETTER_AUTH_SECRET=placeholder-build-secret
-ARG BETTER_AUTH_URL=https://placeholder.local
-ENV BETTER_AUTH_SECRET=$BETTER_AUTH_SECRET \
-    BETTER_AUTH_URL=$BETTER_AUTH_URL
- 
-# Every integration module (GitHub, Linear, Jira) is imported into the build graph
-# regardless of which you use, so their env guards all fire. Linear validates
-# LINEAR_TOKEN_ENCRYPTION_KEY at MODULE SCOPE and throws if unset. 64-hex placeholder
-# (valid hex, 32 bytes) for build. IMPORTANT: this same check runs at RUNTIME too,
-# so you must ALSO set LINEAR_TOKEN_ENCRYPTION_KEY in Coolify — a real
-# `openssl rand -hex 32` is fine even though Linear stays unused.
-ARG LINEAR_TOKEN_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
-ENV LINEAR_TOKEN_ENCRYPTION_KEY=$LINEAR_TOKEN_ENCRYPTION_KEY
-
-ARG SLACK_TOKEN_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
-ENV SLACK_TOKEN_ENCRYPTION_KEY=$SLACK_TOKEN_ENCRYPTION_KEY
-
-# /api/github/setup imports a lib that runs
-# `process.env.GITHUB_PRIVATE_KEY.replace(/\\n/g,"\n")` at MODULE SCOPE, so
-# page-data collection throws when the var is undefined at build. A bare string is
-# enough — the Octokit/PEM parsing is lazy (inside the exported functions), so
-# nothing validates the key at build. The real key comes from Coolify at runtime.
-# NB: the var is GITHUB_PRIVATE_KEY (not GITHUB_APP_PRIVATE_KEY).
-ARG GITHUB_PRIVATE_KEY=placeholder
-ENV GITHUB_PRIVATE_KEY=$GITHUB_PRIVATE_KEY
-
-# "web..." builds @workspace/db first (its build script IS `prisma generate`),
-# then next build — dependency order handled by pnpm/turbo.
-RUN pnpm --filter "web..." build
-
-# ---- Runner ----
-# Non-standalone runner: simplest, and needs NO next.config change (keeps the fork
-# to pure additions). Larger image, but the server only runs it. To shrink later,
-# set `output: 'standalone'` in apps/web/next.config and copy .next/standalone.
-FROM base AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-# Copy as the non-root `node` user. COPY defaults to root ownership, but we drop to
-# USER node below — so anything the app writes at RUNTIME (Fumadocs regenerating
-# apps/web/.source, Next's .next/cache) would hit "permission denied" on root-owned
-# files. --chown gives the runtime user ownership.
-COPY --from=builder --chown=node:node /app ./
+FROM base AS runtime
+ENV NODE_ENV=production \
+    PORT=3000 \
+    STORAGE_LOCAL_PATH=/data/storage
+COPY --from=build /app ./
+# Next.js and fumadocs write under the app directory at runtime. Dependencies stay
+# owned by root.
+COPY --from=build --chown=node:node /web ./apps/web
+RUN mkdir -p /data/storage && chown node:node /data/storage
 USER node
+WORKDIR /app/apps/web
 EXPOSE 3000
-ENV PORT=3000 HOSTNAME=0.0.0.0
-CMD ["pnpm", "--filter", "web", "start"]
+CMD ["sh", "-c", "cd /app/packages/database && ./node_modules/.bin/prisma migrate deploy && cd /app/apps/web && exec ./node_modules/.bin/next start"]

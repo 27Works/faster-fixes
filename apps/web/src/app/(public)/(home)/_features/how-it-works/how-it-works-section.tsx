@@ -16,7 +16,11 @@ const steps = [
     cardTitle: "yourapp.com",
     title: "Client annotate your site",
     description:
-      "No account, no onboarding. They click, leave a comment, and move on. Screenshot, URL, component path, browser details, console logs, and network requests are captured automatically.",
+      "No account, no onboarding. They click, leave a comment, and move on. Screenshot, a replay of the last minute, URL, component path, browser details, console logs, and network requests are captured automatically.",
+    link: {
+      href: "/features/website-annotation" as Route,
+      label: "How client annotation works",
+    },
     Content: AnnotateContent,
   },
   {
@@ -25,6 +29,10 @@ const steps = [
     title: "Output as structured markdown",
     description:
       "The widget structures every detail automatically. Your agent receives a complete report and knows exactly where to look.",
+    link: {
+      href: "/features/actionable-bug-reports" as Route,
+      label: "What a complete bug report contains",
+    },
     Content: StructureContent,
   },
   {
@@ -39,11 +47,11 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="bg-muted/50 w-full py-16 md:py-24">
+    <section id="how-it-works" className="w-full bg-muted/50 py-16 md:py-24">
       <style dangerouslySetInnerHTML={{ __html: flowAnimationStyles }} />
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             How it works
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
@@ -67,13 +75,21 @@ export function HowItWorksSection() {
                 </div>
               )}
 
-              <span className="text-muted-foreground font-mono text-sm">
+              <span className="font-mono text-sm text-muted-foreground">
                 {step.label}
               </span>
               <h3 className="text-lg font-semibold md:text-xl">{step.title}</h3>
-              <p className="text-muted-foreground text-lg leading-relaxed md:text-xl">
+              <p className="text-lg leading-relaxed text-muted-foreground md:text-xl">
                 {step.description}
               </p>
+              {step.link && (
+                <Link
+                  href={step.link.href}
+                  className="text-sm text-foreground underline underline-offset-4 hover:no-underline"
+                >
+                  {step.link.label} →
+                </Link>
+              )}
             </div>
           ))}
         </div>

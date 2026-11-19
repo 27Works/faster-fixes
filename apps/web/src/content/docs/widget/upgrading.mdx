@@ -1,0 +1,136 @@
+---
+title: Upgrading
+description: Upgrade the widget packages to a new major version.
+---
+
+<Callout title="Recording is on by default">
+  The minor release that brings Recording turns it on for every site that
+  installs it, with no code change. Each page Feedback carries a reconstruction
+  of the last minute on the page: its content as it changed, and the Reviewer's
+  clicks, scrolling and pointer, without the values typed into form fields. To
+  turn it off, pass `captureRecording: false`, or set
+  `data-capture-recording="false"` on the script tag. See
+  [Recording](/docs/widget/recording).
+</Callout>
+
+## Upgrade with an agent
+
+Paste this prompt into Claude Code, Codex, Cursor or any coding agent that runs in your project:
+
+```text
+Upgrade @fasterfixes/react in this project to its latest version.
+
+Follow the upgrade guide at https://faster-fixes.com/docs/widget/upgrading
+as the source of truth. Note the installed version, install the latest
+one, then apply the section for the version you started from and every
+section above it. Search the whole codebase, including stylesheets and
+tests, for the props, imports and selectors each section mentions.
+
+Briefly explain the plan before editing. Keep the changes scoped to the
+upgrade, and ask before deciding anything the guide leaves open.
+Summarize what changed and what needs a manual check.
+```
+
+## Install the latest version
+
+```package-install
+@fasterfixes/react@latest
+```
+
+Then apply the section for the version you upgraded from, and every section above it from the bottom up.
+
+## From 0.0.x [#from-0-0-x]
+
+Breaking changes introduced in 1.0.0. The full list of changes is in the [changelog](https://github.com/manucoffin/faster-fixes/blob/main/packages/widget-react/CHANGELOG.md#100).
+
+### 1. Check your dependencies
+
+Peer dependencies are unchanged: `react` and `react-dom` 18 or later.
+
+If your code imports from `@fasterfixes/core`, install it as a direct dependency. `@fasterfixes/react` no longer depends on it.
+
+### 2. Rename `apiKey` to `projectId`
+
+```tsx
+// Before
+<FeedbackProvider apiKey="proj_your_project_id">
+
+// After
+<FeedbackProvider projectId="proj_your_project_id">
+```
+
+`apiKey` still works in 1.x and logs a warning in development. It will be removed in 2.0.0.
+
+### 3. Replace `classNames`
+
+`classNames` is ignored in 1.0.0 and will be removed in 2.0.0. Remove the prop and move each style to the matching [`::part()` selector](/docs/widget/customization#parts):
+
+| `classNames` key   | Replacement                                   |
+| ------------------ | --------------------------------------------- |
+| `button`           | `[data-ff-widget]::part(button)`              |
+| `popover`          | `[data-ff-widget]::part(popover)`             |
+| `textarea`         | `[data-ff-widget]::part(textarea)`            |
+| `pin`              | `[data-ff-widget]::part(pin)`                 |
+| `overlay`          | `[data-ff-widget]::part(overlay)`             |
+| `feedbackList`     | `[data-ff-widget]::part(list)`                |
+| `feedbackListItem` | `[data-ff-widget]::part(list-item)`           |
+| `errorState`       | `[data-ff-widget]::part(popover)`             |
+| `successState`     | None. The success state is no longer rendered |
+
+For colors, radius and font, set the [CSS custom properties](/docs/widget/customization#css-custom-properties) instead:
+
+```tsx
+// Before
+<FeedbackProvider
+  projectId="proj_your_project_id"
+  classNames={{ button: "ff-button", popover: "ff-popover" }}
+>
+```
+
+```css
+/* After */
+[data-ff-widget] {
+  --ff-background: #ffffff;
+  --ff-foreground: #18181b;
+  --ff-radius: 4px;
+}
+
+[data-ff-widget]::part(button) {
+  box-shadow: none;
+}
+```
+
+### 4. Update selectors that target the widget
+
+The widget now renders in a Shadow DOM. Rules in your stylesheet that targeted its elements, and test selectors that queried them, no longer match.
+
+- Move style overrides to CSS custom properties and `::part()` selectors, as in step 3.
+- In end-to-end tests, locate widget elements by role or accessible name. Playwright pierces open Shadow DOM by default. With other tools, query through `document.querySelector("[data-ff-widget]").shadowRoot`.
+
+### 5. Replace `@fasterfixes/react/internal`
+
+The `@fasterfixes/react/internal` entry and `FeedbackProviderCore` are removed. To run the widget with a custom `FeedbackClient`, use `createWidget` from `@fasterfixes/widget/internal`:
+
+```ts
+import { createWidget } from "@fasterfixes/widget/internal";
+```
+
+Like the entry it replaces, `@fasterfixes/widget/internal` is unstable and may change in any release.
+
+### 6. Translate the new labels
+
+Skip this step if you do not pass `labels`. Strings that were fixed in 0.0.x now come from `labels`. Add them to your translations:
+
+| Key                | Default                                   |
+| ------------------ | ----------------------------------------- |
+| `startFeedback`    | `"Start feedback"`                        |
+| `exitFeedbackMode` | `"Exit feedback mode"`                    |
+| `showFeedbackList` | `"Show feedback list"`                    |
+| `hideFeedbackList` | `"Hide feedback list"`                    |
+| `showMarkers`      | `"Show markers"`                          |
+| `hideMarkers`      | `"Hide markers"`                          |
+| `closeButton`      | `"Close"`                                 |
+| `brandingLink`     | `"Powered by FasterFixes"`                |
+| `pinAriaLabel`     | `` (comment) => `Feedback: ${comment}` `` |
+
+No key was removed or renamed. See [Labels](/docs/widget/customization#labels) for the full list.

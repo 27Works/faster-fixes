@@ -1,4 +1,21 @@
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
 import { CheckIcon, XIcon } from "lucide-react";
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import {
+  formatAmount,
+  formatPrice,
+} from "../../../_helpers/format-competitor-price";
+
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const ruttlPro = COMPETITOR_PRICES.ruttl.plans.pro;
+const teamSize = 5;
+const ruttlTeamMonthly = ruttlPro.amount * teamSize;
+const usd = (amount: number) => formatAmount(amount, "USD");
 
 type Cell = string | { type: "yes" | "no"; note?: string };
 
@@ -14,13 +31,16 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Pricing model",
     cells: [
-      "$0 self-hosted / $20/mo Pro (up to 5 members)",
-      "$18/user/mo Pro / $90/user/mo Business",
+      `$0 self-hosted / $${proPrice}/mo Pro (up to ${proPlan.seats} members)`,
+      `${formatPrice(ruttlPro)}/user/mo Pro / custom Business`,
     ],
   },
   {
     label: "Cost for a 5-person team",
-    cells: ["$20/mo = $240/year", "$90/mo = $1,080/year"],
+    cells: [
+      `$${proPrice}/mo = $${proPrice * 12}/year`,
+      `${usd(ruttlTeamMonthly)}/mo = ${usd(ruttlTeamMonthly * 12)}/year`,
+    ],
   },
   {
     label: "MCP server (Claude Code / Cursor)",
@@ -45,10 +65,24 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     cells: [{ type: "yes" }, { type: "yes" }],
   },
   {
-    label: "Framework-native widget",
+    label: "React package",
     cells: [
-      { type: "yes", note: "React / Next.js SDK" },
+      { type: "yes", note: "Plus a script tag for any site" },
       { type: "no", note: "Generic JS snippet" },
+    ],
+  },
+  {
+    label: "Video review (uploaded videos)",
+    cells: [
+      { type: "yes", note: "Timestamped · area on the frame" },
+      { type: "yes", note: "Timestamped comments" },
+    ],
+  },
+  {
+    label: "Session replay",
+    cells: [
+      { type: "yes", note: "Last minute before each feedback · all plans" },
+      { type: "no" },
     ],
   },
   {
@@ -56,16 +90,23 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     cells: [
       {
         type: "yes",
-        note: "GitHub, Linear, Jira — two-way, workflow-state aware",
+        note: "GitHub, Linear, Jira, Trello: two-way, workflow-state aware",
       },
-      { type: "yes", note: "Jira, Trello, ClickUp, Asana — link-back only" },
+      { type: "yes", note: "Jira, Trello, ClickUp, Asana: link-back only" },
+    ],
+  },
+  {
+    label: "Trello sync",
+    cells: [
+      { type: "yes", note: "Bidirectional · status follows the mapped lists" },
+      { type: "yes", note: "Link-back only" },
     ],
   },
   {
     label: "Slack notifications",
     cells: [
       { type: "yes", note: "New feedback + live status, per project" },
-      { type: "yes", note: "Comments, mentions, new pages — one-way" },
+      { type: "yes", note: "Comments, mentions, new pages: one-way" },
     ],
   },
 ];
@@ -74,17 +115,17 @@ const headers = ["FasterFixes", "Ruttl"] as const;
 
 function renderCell(cell: Cell) {
   if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
+    return <span className="text-sm text-muted-foreground">{cell}</span>;
   }
   return (
     <div className="flex flex-col gap-1">
       {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
+        <CheckIcon className="size-5 text-success" aria-label="Yes" />
       ) : (
-        <XIcon className="text-destructive size-5" aria-label="No" />
+        <XIcon className="size-5 text-destructive" aria-label="No" />
       )}
       {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
+        <span className="text-xs text-muted-foreground">{cell.note}</span>
       )}
     </div>
   );
@@ -92,10 +133,10 @@ function renderCell(cell: Cell) {
 
 export function RuttlComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
+    <section className="w-full border-y bg-muted/30 py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Compare
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">

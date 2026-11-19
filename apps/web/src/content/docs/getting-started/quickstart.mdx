@@ -5,49 +5,81 @@ description: Go from zero to collecting your first feedback in under 5 minutes.
 
 ## 1. Install the widget
 
-```package-install
-@fasterfixes/react
-```
+Pick the install page for your site. Each one covers installation, setup and where to mount the widget.
 
-The `projectId` prop requires `@fasterfixes/react` version 0.0.9 or later.
+<Cards>
+  <Card
+    title={
+      <span className="flex items-center gap-2">
+        <ReactIcon className="size-4" />
+        React
+      </span>
+    }
+    description="A provider and a hook for React, Next.js, Remix and TanStack Start."
+    href="/docs/widget/install/react"
+  />
+  <Card
+    title={
+      <span className="flex items-center gap-2">
+        <VueIcon className="size-4" />
+        Vue
+      </span>
+    }
+    description="A plugin and a composable for Vue and Nuxt."
+    href="/docs/widget/install/vue"
+  />
+  <Card
+    title={
+      <span className="flex items-center gap-2">
+        <AngularIcon className="size-4" />
+        Angular
+      </span>
+    }
+    description="A provider function and an inject function for Angular and Analog."
+    href="/docs/widget/install/angular"
+  />
+  <Card
+    title={
+      <span className="flex items-center gap-2">
+        <SvelteIcon className="size-4" />
+        Svelte
+      </span>
+    }
+    description="An install function and an accessor for Svelte and SvelteKit."
+    href="/docs/widget/install/svelte"
+  />
+  <Card
+    title={
+      <span className="flex items-center gap-2">
+        <JavascriptIcon className="size-4" />
+        Script embed
+      </span>
+    }
+    description="One script tag for WordPress, Webflow, static HTML or any other stack."
+    href="/docs/widget/install/script-embed"
+  />
+  <Card
+    title="Other frameworks"
+    description="Snippets for Astro, Solid, Preact and vanilla JavaScript."
+    href="/docs/widget/install/other-frameworks"
+  />
+</Cards>
 
-## 2. Add the provider
+## 2. Get your Project ID
 
-Wrap your app with `FeedbackProvider`:
+Go to [faster-fixes.com](https://faster-fixes.com), create a project, and copy the Project ID from project settings. Use it wherever the install page asks for your Project ID.
 
-```tsx title="app/layout.tsx"
-import { FeedbackProvider } from "@fasterfixes/react";
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html>
-      <body>
-        <FeedbackProvider projectId="proj_your_project_id">{children}</FeedbackProvider>
-      </body>
-    </html>
-  );
-}
-```
-
-## 3. Get your Project ID
-
-Go to [faster-fixes.com](https://faster-fixes.com), create a project, and copy the Project ID from project settings. Paste it into the `projectId` prop above.
-
-## 4. Collect your first feedback
+## 3. Collect your first feedback
 
 To test the widget yourself:
 
 - In your project dashboard, go to **Reviewers** and create a reviewer (e.g. "Client - John"). Copy the review link.
-- Open your site using that link. A floating button appears — click it, then click any element on the page to annotate it. Write a comment and submit.
-- Go back to your project's **Inbox**. The feedback appears with the screenshot, page URL, browser info, DOM selector, and a diagnostics view with the console logs and network requests captured before submission.
+- Open your site using that link. A floating button appears. Click it, then click any element on the page to annotate it. Write a comment and submit.
+- Go back to your project's **Task board**. The feedback appears with the screenshot, page URL, browser info, DOM selector, a Recording of the last minute on the page, and a diagnostics view with the console logs and network requests captured before submission.
 
 In practice, share the review link with your actual clients so they can leave feedback directly. See [Reviewer Tokens](/docs/concepts/reviewer-tokens) for more on managing reviewers and access.
 
-## 5. Connect your AI coding agent
+## 4. Connect your AI coding agent
 
 Create an agent token in [Integrations](https://faster-fixes.com/integrations). Then add `.mcp.json` to your project root:
 
@@ -70,4 +102,4 @@ See the [MCP setup guide](/docs/mcp/setup) for other editors (Cursor, VS Code, W
 
 ---
 
-🎉 That's it! You can now ask your AI agent to fetch client feedback, locate the relevant code, and fix issues automatically.
+You can now ask your AI agent to fetch client feedback, locate the relevant code, and fix issues automatically.

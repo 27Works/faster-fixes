@@ -1,6 +1,6 @@
 "use client";
 
-import { useFeedbackMutations } from "@/app/(authenticated)/(project)/inbox/_features/use-feedback-mutations";
+import { useFeedbackMutations } from "@/app/(authenticated)/(project)/inbox/_features/feedback-mutations/use-feedback-mutations";
 import {
   closestCorners,
   DndContext,
@@ -8,23 +8,36 @@ import {
   DragOverlay,
   type DragStartEvent,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import * as React from "react";
+import {
+  type BoardSort,
+  resolveDropNeighbours,
+  sortColumnFeedback,
+} from "../../_helpers/board-column-order";
+import {
+  type BoardSource,
+  matchesBoardSource,
+} from "../../_helpers/board-source";
 import { BulkActionToolbar } from "../actions-toolbar/bulk-action-toolbar.client";
-import type { GetFeedbackOutput } from "../get-feedback.trpc.query";
+import type { ListFeedbackOutput } from "../../_services/list-feedback";
+import { readDropStatus } from "../../_helpers/board-drop-target";
+import { BoardSummaryStrip } from "./board-summary-strip";
 import { KanbanCardOverlay } from "./kanban-card.client";
-import { KanbanColumnBody, KanbanColumnHeader } from "./kanban-column.client";
+import { KanbanColumnBody } from "./kanban-column.client";
 import { KanbanMobile } from "./kanban-mobile.client";
 
-type FeedbackItem = GetFeedbackOutput[number];
+type FeedbackItem = ListFeedbackOutput[number];
 
 type KanbanBoardProps = {
   feedback: FeedbackItem[];
-  pageUrlFilter: string | null;
-  sort: string;
+  source: BoardSource;
+  sort: BoardSort;
   onSelectFeedback: (id: string) => void;
 };
 
@@ -34,51 +47,56 @@ const COLUMNS = [
   { id: "resolved", title: "Resolved" },
 ] as const;
 
-function sortFeedback(items: FeedbackItem[], sort: string): FeedbackItem[] {
-  return [...items].sort((a, b) => {
-    switch (sort) {
-      case "oldest":
-        return (
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-      case "updated":
-        return (
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-      default: // newest
-        return (
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-    }
-  });
+// A drop on the column itself rather than on a card lands at the bottom. Within
+// a column the sortable already reports the slot. The target column of a
+// cross-column drop opens no gap, so the card goes above or below the hovered
+// card depending on which half it was dropped on.
+function resolveDropIndex(
+  { active, over }: DragEndEvent,
+  overIndex: number,
+  columnLength: number,
+  isSameColumn: boolean,
+) {
+  if (overIndex === -1 || !over) return columnLength;
+  if (isSameColumn) return overIndex;
+  const dragged = active.rect.current.translated;
+  if (!dragged) return overIndex;
+  const isBelow =
+    dragged.top + dragged.height / 2 > over.rect.top + over.rect.height / 2;
+  return isBelow ? overIndex + 1 : overIndex;
 }
 
 export function KanbanBoard({
   feedback,
-  pageUrlFilter,
+  source,
   sort,
   onSelectFeedback,
 }: KanbanBoardProps) {
-  const { updateStatus, bulkUpdateStatus } = useFeedbackMutations();
+  const { updateStatus, bulkUpdateStatus, moveFeedback } =
+    useFeedbackMutations();
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
   const [activeId, setActiveId] = React.useState<string | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      // Slightly higher distance so a quick click never starts a drag.
-      activationConstraint: { distance: 6 },
+    // The whole card is the drag source, so a click must still open it: the
+    // mouse drags only after moving, touch only after a long press (so the
+    // board still scrolls).
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 250, tolerance: 5 },
     }),
-    useSensor(KeyboardSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
-  // Filter out closed items and apply page URL filter
-  const filtered = React.useMemo(() => {
-    let items = feedback.filter((f) => f.status !== "closed");
-    if (pageUrlFilter) {
-      items = items.filter((f) => f.pageUrl === pageUrlFilter);
-    }
-    return items;
-  }, [feedback, pageUrlFilter]);
+  const filtered = React.useMemo(
+    () =>
+      feedback.filter(
+        (f) => f.status !== "closed" && matchesBoardSource(f, source),
+      ),
+    [feedback, source],
+  );
 
   const grouped = React.useMemo(() => {
     const map: Record<string, FeedbackItem[]> = {
@@ -89,23 +107,11 @@ export function KanbanBoard({
     for (const item of filtered) {
       map[item.status]?.push(item);
     }
-    // Sort each column
-    for (const key of Object.keys(map)) {
-      map[key] = sortFeedback(map[key]!, sort);
+    for (const [key, items] of Object.entries(map)) {
+      map[key] = sortColumnFeedback(items, sort);
     }
     return map;
   }, [filtered, sort]);
-
-  const totalCount = filtered.length;
-
-  const bulkToolbar = (
-    <BulkActionToolbar
-      selectedItems={feedback.filter((f) => selectedIds.has(f.id))}
-      onMoveToStatus={(status) => handleBulkAction(status)}
-      onArchive={() => handleBulkAction("closed")}
-      onClearSelection={() => setSelectedIds(new Set())}
-    />
-  );
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
@@ -114,15 +120,47 @@ export function KanbanBoard({
   function handleDragEnd(event: DragEndEvent) {
     setActiveId(null);
     const { active, over } = event;
-    if (!over) return;
-
     const feedbackId = active.id as string;
-    const newStatus = over.id as string;
+    const newStatus = readDropStatus(over);
 
     const item = feedback.find((f) => f.id === feedbackId);
-    if (!item || item.status === newStatus) return;
+    if (!item || !over || !newStatus) return;
 
-    updateStatus(feedbackId, newStatus);
+    const isSameColumn = item.status === newStatus;
+
+    // A date sort orders the column itself, so a drop there only ever changes
+    // the Status and a same-column drop does nothing.
+    if (sort !== "manual") {
+      if (!isSameColumn) updateStatus(feedbackId, newStatus);
+      return;
+    }
+    if (over.id === feedbackId) return;
+
+    // Under the source filter these are the visible cards, so the card lands
+    // between its visible neighbours.
+    const columnIds = (grouped[newStatus] ?? []).map((f) => f.id);
+    const overIndex = columnIds.indexOf(over.id as string);
+    const target = resolveDropNeighbours(
+      columnIds,
+      feedbackId,
+      resolveDropIndex(event, overIndex, columnIds.length, isSameColumn),
+    );
+
+    if (isSameColumn) {
+      const current = resolveDropNeighbours(
+        columnIds,
+        feedbackId,
+        columnIds.indexOf(feedbackId),
+      );
+      if (
+        target.beforeId === current.beforeId &&
+        target.afterId === current.afterId
+      ) {
+        return;
+      }
+    }
+
+    moveFeedback(feedbackId, newStatus, target.beforeId, target.afterId);
   }
 
   function handleDragCancel() {
@@ -165,12 +203,24 @@ export function KanbanBoard({
     setSelectedIds(new Set());
   }
 
+  const bulkToolbar = (
+    <BulkActionToolbar
+      selectedItems={feedback.filter((f) => selectedIds.has(f.id))}
+      onMoveToStatus={(status) => handleBulkAction(status)}
+      onArchive={() => handleBulkAction("closed")}
+      onClearSelection={() => setSelectedIds(new Set())}
+    />
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <p className="text-muted-foreground text-sm">
-          {totalCount} {totalCount === 1 ? "item" : "items"}
-        </p>
+      <div className="hidden lg:block">
+        <BoardSummaryStrip
+          columns={COLUMNS}
+          feedback={filtered}
+          selectedIds={selectedIds}
+          onToggleSelectAll={handleToggleSelectAll}
+        />
       </div>
 
       <KanbanMobile
@@ -182,21 +232,6 @@ export function KanbanBoard({
         onToggleSelectAll={handleToggleSelectAll}
         onSelectFeedback={onSelectFeedback}
       />
-
-      {/* Desktop: column headers */}
-      <div className="hidden gap-4 lg:grid lg:grid-cols-3">
-        {COLUMNS.map((col) => (
-          <KanbanColumnHeader
-            key={col.id}
-            id={col.id}
-            title={col.title}
-            count={(grouped[col.id] ?? []).length}
-            selectedIds={selectedIds}
-            itemIds={(grouped[col.id] ?? []).map((i) => i.id)}
-            onToggleSelectAll={handleToggleSelectAll}
-          />
-        ))}
-      </div>
 
       <div className="hidden lg:block">{bulkToolbar}</div>
 
@@ -215,6 +250,7 @@ export function KanbanBoard({
               id={col.id}
               items={grouped[col.id] ?? []}
               selectedIds={selectedIds}
+              isSortable={sort === "manual"}
               onToggleSelect={handleToggleSelect}
               onSelectFeedback={onSelectFeedback}
             />
@@ -227,7 +263,6 @@ export function KanbanBoard({
             <KanbanCardOverlay
               feedback={activeFeedback}
               isSelected={selectedIds.has(activeFeedback.id)}
-              selectionMode={selectedIds.size > 0}
             />
           ) : null}
         </DragOverlay>

@@ -1,0 +1,91 @@
+---
+title: Angular
+description: Install and configure the Faster Fixes widget in your Angular or Analog application.
+---
+
+## Installation
+
+```package-install
+@fasterfixes/angular
+```
+
+Requires Angular 19 or later.
+
+## Setup
+
+Add the provider to your application config:
+
+```ts title="src/app/app.config.ts"
+import type { ApplicationConfig } from "@angular/core";
+import { provideRouter } from "@angular/router";
+import { provideFasterFixes } from "@fasterfixes/angular";
+import { routes } from "./app.routes";
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideRouter(routes),
+    provideFasterFixes({ projectId: "proj_your_project_id" }),
+  ],
+};
+```
+
+Get your Project ID in [Project Settings](https://faster-fixes.com/settings). The widget only shows for Reviewers who opened your site through their review link. See [Reviewer Tokens](/docs/concepts/reviewer-tokens).
+
+The widget mounts once for the application and is removed when the application is destroyed. A second `provideFasterFixes` call, for example in a lazy route's providers, is ignored.
+
+## Options
+
+| Option               | Type                                       | Required | Description                                                                                                                       |
+| -------------------- | ------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `projectId`          | `string`                                   | Yes      | Your Faster Fixes Project ID                                                                                                      |
+| `apiOrigin`          | `string`                                   | No       | API base URL. Defaults to `https://www.faster-fixes.com`                                                                          |
+| `color`              | `string`                                   | No       | Accent color. Any CSS color value. Defaults to `#02527E`                                                                          |
+| `position`           | `WidgetPosition`                           | No       | Floating button placement. Defaults to `bottom-right`. See [Position](/docs/widget/customization#position).                       |
+| `labels`             | `Partial<Labels>`                          | No       | Replaces any visible or announced string. See [Labels](/docs/widget/customization#labels).                                        |
+| `captureDiagnostics` | `boolean`                                  | No       | Records the console and network history leading to a report. Defaults to `true`                                                   |
+| `captureRecording`   | `boolean`                                  | No       | Keeps a Recording of the last minute on the page with each Feedback. Defaults to `true`. See [Recording](/docs/widget/recording). |
+| `customMetadata`     | `CustomMetadata \| (() => CustomMetadata)` | No       | Key/value pairs sent with every Feedback, such as a user ID. See [Custom metadata](/docs/widget/custom-metadata).                 |
+
+Options are read once, when the application starts.
+
+### Theming
+
+`color` sets the accent. For finer control, override the `--ff-*` CSS custom properties or style the exposed parts with `::part()` in your global stylesheet. See [CSS custom properties](/docs/widget/customization#css-custom-properties) and [Parts](/docs/widget/customization#parts).
+
+## Where to mount
+
+### Angular CLI
+
+In a standalone application, add the provider to `src/app/app.config.ts`, as in [Setup](#setup).
+
+### Angular SSR
+
+With `@angular/ssr`, keep the provider in `src/app/app.config.ts`. The server config merges it, and the provider does nothing on the server: the widget mounts in the browser only, outside the application root, so hydration is not affected.
+
+### Analog
+
+Analog renders on the server by default. Add the provider to `src/app/app.config.ts`, the same file as in Angular CLI. The same rule applies: nothing runs on the server, and the widget mounts in the browser.
+
+### NgModule apps
+
+Add the provider to the root module's providers:
+
+```ts title="src/app/app.module.ts"
+import { NgModule } from "@angular/core";
+import { BrowserModule } from "@angular/platform-browser";
+import { provideFasterFixes } from "@fasterfixes/angular";
+import { AppComponent } from "./app.component";
+
+@NgModule({
+  declarations: [AppComponent],
+  imports: [BrowserModule],
+  providers: [provideFasterFixes({ projectId: "proj_your_project_id" })],
+  bootstrap: [AppComponent],
+})
+export class AppModule {}
+```
+
+## Next steps
+
+- Build your own trigger or read the widget state in [Control the Widget](/docs/widget/control-the-widget).
+- Theme the widget and replace its strings in [Customization](/docs/widget/customization).

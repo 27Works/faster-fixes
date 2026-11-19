@@ -28,7 +28,40 @@ export const DEFAULT_API_ORIGIN = "https://www.faster-fixes.com";
 export const DEFAULT_WIDGET_COLOR = "#02527E";
 export const DEFAULT_WIDGET_POSITION: WidgetPosition = "bottom-right";
 
-export const DEFAULT_LABELS = {
+export type Labels = {
+  submitButton: string;
+  cancelButton: string;
+  textareaPlaceholder: string;
+  // Unused by the Widget, kept so existing `labels` objects still type-check.
+  successMessage: string;
+  // Accessible name of the pin popover's close control.
+  closeButton: string;
+  retryButton: string;
+  errorMessage: string;
+  deleteConfirm: string;
+  deleteButton: string;
+  editButton: string;
+  saveButton: string;
+  showResolved: string;
+  hideResolved: string;
+  feedbackListTitle: string;
+  emptyList: string;
+  startFeedback: string;
+  exitFeedbackMode: string;
+  showFeedbackList: string;
+  hideFeedbackList: string;
+  showMarkers: string;
+  hideMarkers: string;
+  // Text of the link to the product site shown when the Project has branding.
+  brandingLink: string;
+  // Receives the excerpt of the Feedback comment the pin stands for.
+  pinAriaLabel: (commentExcerpt: string) => string;
+  // Shown in the comment form when a Recording will be attached. Receives its
+  // duration in whole seconds, at least 1.
+  recordingIncluded: (seconds: number) => string;
+};
+
+export const DEFAULT_LABELS: Labels = {
   submitButton: "Submit",
   cancelButton: "Cancel",
   textareaPlaceholder: "Describe the issue...",
@@ -44,9 +77,20 @@ export const DEFAULT_LABELS = {
   hideResolved: "Hide resolved",
   feedbackListTitle: "Feedback",
   emptyList: "No feedback on this page",
-} as const;
-
-export type Labels = typeof DEFAULT_LABELS;
+  startFeedback: "Start feedback",
+  exitFeedbackMode: "Exit feedback mode",
+  showFeedbackList: "Show feedback list",
+  hideFeedbackList: "Hide feedback list",
+  showMarkers: "Show markers",
+  hideMarkers: "Hide markers",
+  brandingLink: "Powered by FasterFixes",
+  pinAriaLabel: (commentExcerpt) => `Feedback: ${commentExcerpt}`,
+  // A warm buffer holds 30 to 60 seconds; a shorter one states its real length.
+  recordingIncluded: (seconds) =>
+    seconds >= 30
+      ? "Includes the last minute on this page."
+      : `Includes the last ${seconds === 1 ? "second" : `${seconds} seconds`} on this page.`,
+};
 
 export const STORAGE_KEY_TOKEN = "ff_reviewer_token";
 export const URL_PARAM_TOKEN = "ff_token";
@@ -81,3 +125,10 @@ export const DIAGNOSTICS_REDACT_PARAMS = [
   "email",
   "jwt",
 ] as const;
+
+/** Custom metadata keeps at most 50 keys; later keys are dropped in declared order. */
+export const CUSTOM_METADATA_MAX_KEYS = 50;
+/** Custom metadata keys longer than 40 characters are truncated. */
+export const CUSTOM_METADATA_MAX_KEY_LENGTH = 40;
+/** Custom metadata string values longer than 500 characters are truncated. */
+export const CUSTOM_METADATA_MAX_VALUE_LENGTH = 500;

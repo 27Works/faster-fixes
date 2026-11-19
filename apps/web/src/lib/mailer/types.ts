@@ -57,11 +57,11 @@ export type AddContactToSegmentOptions = {
   segmentId: string;
 };
 
-export interface Mailer {
+export type Mailer = {
   emails: {
     send(options: MailOptions): Promise<EmailResponse>;
   };
-  contacts: {
+  contacts?: {
     list(): Promise<Contact[]>;
     create(options: CreateContactOptions): Promise<Contact>;
     get(id: string): Promise<Contact>;
@@ -69,4 +69,4 @@ export interface Mailer {
     delete(id: string): Promise<Contact>;
     addToSegment(options: AddContactToSegmentOptions): Promise<void>;
   };
-}
+};

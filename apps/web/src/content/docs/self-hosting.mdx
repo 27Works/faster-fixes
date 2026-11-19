@@ -3,22 +3,72 @@ title: Self-hosting
 description: Deploy FasterFixes on your own infrastructure. Host the dashboard, the widget API, and the MCP server without relying on the cloud version.
 ---
 
-FasterFixes is AGPL-3.0. You can deploy the full stack — dashboard, widget API, and background jobs — on your own infrastructure. This guide covers the minimal setup for a production deployment.
+FasterFixes is AGPL-3.0. You can deploy the full stack on your own infrastructure: dashboard, widget API, and background jobs. This guide covers the minimal setup for a production deployment.
 
-The widget packages (`@fasterfixes/core`, `@fasterfixes/react`) are MIT-licensed and can be embedded in any client project regardless of where you host the backend.
+The widget packages (`@fasterfixes/widget`, `@fasterfixes/react`, `@fasterfixes/core`) are MIT-licensed and can be embedded in any client project regardless of where you host the backend.
 
 ## Requirements
 
 You will need:
 
-- A **Node.js host** — Vercel is recommended (the repo is a Next.js app), but anything that runs Next.js will work (Railway, Fly, self-managed).
-- A **PostgreSQL database** — Neon, Supabase, Railway, or self-managed.
-- An **Inngest** account for background jobs (screenshot processing, GitHub sync, etc.). The free tier is enough to get started.
-- An **S3-compatible object store** for screenshots — Cloudflare R2 is the recommended default; AWS S3 works identically.
-- A **Resend** or **Plunk** account for transactional email — required to send sign-up confirmations and password resets.
+- A **Node.js host**: Vercel is recommended (the repo is a Next.js app), but anything that runs Next.js will work (Railway, Fly, self-managed). On a single server, [Docker Compose](#docker-compose) runs the whole stack.
+- A **PostgreSQL database**: Neon, Supabase, Railway, or self-managed. Docker Compose includes one.
+- **Inngest** for background jobs (screenshot processing, GitHub sync, etc.): an Inngest Cloud account, where the free tier is enough to get started, or a self-hosted Inngest server. Docker Compose includes a self-hosted server, so no account is needed.
+- A **storage backend** for screenshots and images: Cloudflare R2 (the default), AWS S3, an S3-compatible server such as MinIO, or persistent local disk. Docker Compose uses local disk.
+- An **SMTP server**, **Resend**, or **Plunk** for transactional email: required to send sign-up confirmations and password resets.
 - (Optional) A **GitHub App** if you want the GitHub integration.
 
 Stripe is not needed for self-hosted installs. The billing code only runs on the hosted cloud version.
+
+[Recording](/docs/widget/recording) is included and needs no extra service and no configuration. It works as on the cloud, with the same 4 MB cap per Recording, and each Recording is stored with the screenshots and videos in your storage backend. The script embed fetches the recorder file from the public CDN, `cdn.jsdelivr.net`, at the widget's version, whatever host serves your backend; the framework packages bundle it. On a network that blocks the CDN, feedback is still sent, without a Recording.
+
+## Docker Compose
+
+The repository includes a `docker-compose.yml` that runs the app, PostgreSQL, and a self-hosted Inngest server on one machine, with files stored on local disk. You need Docker with Compose 2.24 or later and an email provider. The numbered steps after this section describe a deployment without Docker.
+
+```bash
+git clone https://github.com/manucoffin/faster-fixes.git
+cd faster-fixes
+cp .env.docker.example .env
+```
+
+Set the values in `.env`:
+
+- `BASE_URL` and `DOMAIN_NAME`: the public URL and hostname of your instance.
+- `BETTER_AUTH_SECRET`, `POSTGRES_PASSWORD`, `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`: generate each with `openssl rand -hex 32`.
+- The email provider: SMTP, Resend, or Plunk. See [SMTP](#smtp) for the SMTP variables.
+
+Compose passes `.env` to the app container, so you can add any other variable from `apps/web/.env.example`, such as integration credentials or S3 storage settings.
+
+Build and start the stack:
+
+```bash
+docker compose up -d --build
+```
+
+The app applies pending database migrations each time it starts, then listens on `127.0.0.1:3000`. Inngest syncs the app's functions automatically and checks for changes every minute. Run the same command after `git pull` to update.
+
+### Build-time values
+
+`BASE_URL`, the `NEXT_PUBLIC_*` variables and `STORAGE_BUCKET_NAME` are inlined when the image is built. After changing one of them, rebuild with `docker compose up -d --build`. Other variables take effect with `docker compose up -d`.
+
+### Reverse proxy
+
+Ports are bound to localhost only. Put a reverse proxy that terminates TLS in front of the app, such as nginx, Caddy, or Traefik, and forward your domain to `http://127.0.0.1:3000`. Videos are uploaded in a single request, so raise the proxy's body size limit. On nginx, set `client_max_body_size`, for example to `4g`.
+
+The Inngest dashboard listens on `127.0.0.1:8288` and has no authentication. Open it through an SSH tunnel, for example `ssh -L 8288:localhost:8288 your-server`, rather than exposing it.
+
+### Data volumes
+
+Compose prefixes each volume name with `faster-fixes_`.
+
+| Volume          | Contents                                           |
+| --------------- | -------------------------------------------------- |
+| `postgres-data` | The database                                       |
+| `app-storage`   | Screenshots, recordings, videos, logos and avatars |
+| `inngest-data`  | Background job state and run history               |
+
+Back up `postgres-data` and `app-storage` together, since the database references the stored files. To dump the database, run `docker compose exec postgres pg_dump -U fasterfixes fasterfixes > backup.sql`. `docker compose down -v` deletes all volumes.
 
 ## 1. Clone and deploy
 
@@ -46,10 +96,9 @@ DATABASE_URL="postgresql://user:password@host:5432/db?schema=public"
 BETTER_AUTH_SECRET="<generate with: openssl rand -base64 32>"
 BETTER_AUTH_URL="https://your-domain.com"
 
-# Storage (Cloudflare R2)
+# Storage (Cloudflare R2, default). The bucket can stay private.
 STORAGE_REGION="auto"
 STORAGE_BUCKET_NAME="your-bucket"
-NEXT_PUBLIC_STORAGE_BASE_URL="https://<account-id>.r2.cloudflarestorage.com/your-bucket"
 R2_ACCOUNT_ID="..."
 R2_ACCESS_KEY_ID="..."
 R2_SECRET_ACCESS_KEY="..."
@@ -58,10 +107,12 @@ R2_SECRET_ACCESS_KEY="..."
 INNGEST_EVENT_KEY="..."
 INNGEST_SIGNING_KEY="..."
 
-# Transactional email — required for sign-up confirmations and password resets.
-# Use either Resend or Plunk.
+# Transactional email: required for sign-up confirmations and password resets.
+# Resend remains the default. Set "plunk" or "smtp" to select another provider.
+MAILER_PROVIDER="resend"
 RESEND_API_KEY="re_..."
 # PLUNK_SECRET_KEY="sk_..."
+# For your own SMTP server, use the SMTP configuration below instead.
 
 # Widget API (points clients' widgets at your instance)
 NEXT_PUBLIC_FF_API_ORIGIN="https://your-domain.com"
@@ -70,9 +121,9 @@ NEXT_PUBLIC_FF_API_ORIGIN="https://your-domain.com"
 NEXT_PUBLIC_IS_CLOUD="false"
 ```
 
-GitHub App variables are optional. Skip them unless you need the GitHub integration. Leave the Stripe variables unset — billing is cloud-only and self-hosted installs don't run it.
+GitHub App variables are optional. Skip them unless you need the GitHub integration. Leave the Stripe variables unset. Billing is cloud-only and self-hosted installs don't run it.
 
-If you prefer AWS S3 over Cloudflare R2, use `AWS_ACCESS_KEY_ID`, `AWS_BUCKET_NAME`, and `AWS_SECRET_ACCESS_KEY` instead of the R2 variables.
+For local disk, replace the storage variables above with `STORAGE_PROVIDER=local`. See the storage options below for optional overrides.
 
 ## 3. Provision external services
 
@@ -80,23 +131,133 @@ If you prefer AWS S3 over Cloudflare R2, use `AWS_ACCESS_KEY_ID`, `AWS_BUCKET_NA
 
 Any Postgres 14+ works. Create a database and put the connection string in `DATABASE_URL`.
 
-### Cloudflare R2
+The adapter is selected from the `DATABASE_URL` hostname in every environment: hosts ending in `.neon.tech` use Neon's serverless adapter; other hosts use standard TCP PostgreSQL. `NODE_ENV` does not select the adapter. Set `DATABASE_PROVIDER=postgres` or `DATABASE_PROVIDER=neon` to override detection, including when using a custom hostname or proxy.
 
-Create a bucket and an API token scoped to that bucket. Copy the account ID, access key, and secret into the R2 variables above. Make the bucket public (or front it with a Worker) so screenshots are readable by reviewers.
+### Storage
+
+Create a private bucket and an API token scoped to it, then set the variables for your provider:
+
+- **Cloudflare R2**: the R2 variables from step 2.
+- **AWS S3**: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET_NAME`, and optionally `AWS_REGION`.
+- **S3-compatible** (MinIO, SeaweedFS): the S3 variables plus `STORAGE_ENDPOINT`. Path-style addressing is used unless `STORAGE_FORCE_PATH_STYLE=false`.
+- **Local disk**: `STORAGE_PROVIDER=local` only. See [Local disk](#local-disk).
+
+`STORAGE_PROVIDER`, `STORAGE_BUCKET_NAME` and `STORAGE_REGION` are optional overrides. The bucket name is read at build time, so set these variables before building.
+
+Screenshots are always served through signed URLs. To serve logos and avatars from a public URL or CDN, set `NEXT_PUBLIC_STORAGE_BASE_URL`.
+
+#### CORS
+
+Video upload and playback need a CORS rule on the bucket. Replace the origin with your app URL:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://feedback.example.com"],
+    "AllowedMethods": ["GET", "HEAD", "PUT", "POST", "DELETE"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+- **Cloudflare R2**: paste the rule into the bucket's CORS policy in the dashboard.
+- **AWS S3**: wrap the array in `{ "CORSRules": [...] }`, then run `aws s3api put-bucket-cors --bucket your-bucket --cors-configuration file://cors.json`.
+- **MinIO**: run `mc admin config set <alias> api cors_allow_origin="https://feedback.example.com"`, then restart the server.
+
+#### Incomplete uploads on S3
+
+R2 deletes incomplete multipart uploads after 7 days. S3 keeps them until a lifecycle rule removes them:
+
+```json
+{
+  "Rules": [
+    {
+      "ID": "abort-incomplete-video-uploads",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "videos/" },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 }
+    }
+  ]
+}
+```
+
+Apply it with `aws s3api put-bucket-lifecycle-configuration --bucket your-bucket --lifecycle-configuration file://lifecycle.json`.
+
+#### Local disk
+
+Files are stored in `./storage`, in a bucket named `uploads`. Override these with `STORAGE_LOCAL_PATH` and `STORAGE_BUCKET_NAME`. Use a persistent directory shared by all app replicas, and back it up with PostgreSQL.
+
+Videos are uploaded in a single request, so your reverse proxy's body size limit caps the video size. On nginx, raise `client_max_body_size` (default `1m`), for example to `4g`.
+
+#### Switching providers
+
+Copy existing files to the new bucket or directory with their keys unchanged, update the storage variables, then rebuild. Previously issued signed URLs stop working.
 
 ### Inngest
 
 Create an app at [inngest.com](https://www.inngest.com). Copy the event key and signing key. After your first deployment, connect Inngest to your instance at `https://your-domain.com/api/inngest`.
 
-## 4. Run migrations
+With Docker Compose, skip this step: the bundled Inngest server uses the keys from `.env`.
 
-From the repo root:
+### SMTP
+
+Set `MAILER_PROVIDER=smtp` to use your own mail server instead of Resend or Plunk:
 
 ```bash
-pnpm --filter @workspace/db migrate:dev
+MAILER_PROVIDER=smtp
+SMTP_HOST=mail.example.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_REQUIRE_TLS=true
+SMTP_USER=your-smtp-username
+SMTP_PASSWORD="your-smtp-password"
+EMAIL_FROM="FasterFixes <support@example.com>"
 ```
 
-This applies all Prisma migrations and generates the client. For subsequent deploys, your host's build step should run `prisma generate`; Prisma migrations are committed to the repo and applied via `migrate:dev` in development and `migrate:deploy` in production (run this as part of your deploy pipeline).
+Port 587 uses STARTTLS. For implicit TLS on port 465, set `SMTP_PORT=465` and `SMTP_SECURE=true`. Set both `SMTP_USER` and `SMTP_PASSWORD`, or leave both unset for an unauthenticated relay. Only disable `SMTP_REQUIRE_TLS` for a trusted local server that does not support TLS.
+
+Use a sender address authorized by your mail server. `EMAIL_FROM` overrides both transactional sender addresses. Alternatively, `MAIL_FROM_DOMAIN` sets the domain for `contact@` and `noreply@` addresses without changing the application domain.
+
+SMTP does not need Resend or Plunk API keys. It sends rendered transactional emails, but has no contact-management API, so marketing contact/segment synchronization is skipped. Keep credentials in your private environment file, not in Git.
+
+### Trello
+
+The [Trello integration](/docs/integrations/trello) is optional. Skip this step unless you need it. It connects through an OAuth 2.0 (3LO) client that you register for your instance:
+
+1. On the [Trello apps administration page](https://trello.com/apps/admin), click **New**, choose **My app doesn't use Power-Up capabilities**, fill in the name, workspace and contact details, then click **Create**.
+2. Open the app's **OAuth 2.0** tab and set the client security type to **Confidential**, so the client gets a secret.
+3. Under **Callback URLs**, add `https://your-domain.com/api/trello/callback`.
+4. In the scopes table, enable `read:member:trello`, `read:board:trello` and `write:board:trello`, then click **Save**. Faster Fixes also requests `offline_access` to refresh its token: it is not listed in the table.
+5. Copy the client ID and secret from the **OAuth 2.0** tab.
+
+Then set the variables:
+
+```bash
+TRELLO_CLIENT_ID="..."
+TRELLO_CLIENT_SECRET="..."
+TRELLO_TOKEN_ENCRYPTION_KEY="<generate with: openssl rand -hex 32>"
+# Optional overrides
+# TRELLO_OAUTH_REDIRECT_URI="https://your-domain.com/api/trello/callback"
+# TRELLO_WEBHOOK_BASE_URL="https://your-domain.com"
+```
+
+`TRELLO_TOKEN_ENCRYPTION_KEY` encrypts the stored Trello tokens. Changing it makes existing connections unreadable until each organization reconnects Trello.
+
+The callback URL defaults to `BETTER_AUTH_URL` followed by `/api/trello/callback`. Set `TRELLO_OAUTH_REDIRECT_URI` only when it differs, and keep it identical to the one registered on the **OAuth 2.0** tab.
+
+Trello delivers card changes to `https://your-domain.com/api/webhooks/trello`, so your instance must be reachable from the internet for status sync. `TRELLO_WEBHOOK_BASE_URL` overrides the base URL, for example with a tunnel during local development.
+
+## 4. Run migrations
+
+From the repo root, with `DATABASE_URL` set to your production database:
+
+```bash
+pnpm --filter @workspace/db migrate:prod
+```
+
+This applies all pending Prisma migrations. Run it on every deploy. Do not use `migrate:dev` in production. With Docker Compose, the app container runs this step on start.
 
 ## 5. Verify
 

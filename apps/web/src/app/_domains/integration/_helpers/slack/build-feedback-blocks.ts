@@ -1,0 +1,174 @@
+import type { FeedbackStatus } from "@/app/_domains/feedback";
+import { describeVideoLocation } from "../github/format-issue-body";
+
+// Block Kit blocks are loosely typed; we model only the shapes we emit rather
+// than depending on the full Block Kit type surface.
+type SlackBlock = Record<string, unknown>;
+
+/**
+ * Identifies who moved a feedback to its current status. The "agent" actor lets
+ * us distinguish automated resolutions from human ones in the badge.
+ */
+export type FeedbackActor = "agent" | "human";
+
+/**
+ * Renders a short status badge with an emoji prefix. The resolved state varies
+ * by actor so the workspace can tell automated fixes from manual ones. The
+ * "closed" status is surfaced as "Archived" per the project glossary.
+ */
+export function statusBadge(
+  status: FeedbackStatus,
+  actor: FeedbackActor,
+): string {
+  switch (status) {
+    case "new":
+      return "🆕 New";
+    case "in_progress":
+      return "⏳ In progress";
+    case "resolved":
+      return actor === "agent" ? "🤖 Resolved by agent" : "✅ Resolved";
+    case "closed":
+      return "🗄️ Archived";
+    default: {
+      // Exhaustiveness guard: a new FeedbackStatus must update this badge.
+      const exhaustiveCheck: never = status;
+      return exhaustiveCheck;
+    }
+  }
+}
+
+type BuildFeedbackBlocksFeedback = {
+  reviewerName: string | null;
+  comment: string;
+  pageUrl: string | null;
+  browserName: string | null;
+  os: string | null;
+  // Optional: absent or null on a page Feedback (ADR-0020).
+  videoId?: string | null;
+  videoTitle?: string | null;
+  startMs?: number | null;
+  endMs?: number | null;
+  frameX?: number | null;
+  frameY?: number | null;
+  frameWidth?: number | null;
+  frameHeight?: number | null;
+};
+
+type BuildFeedbackBlocksParams = {
+  feedback: BuildFeedbackBlocksFeedback;
+  status: FeedbackStatus;
+  actor: FeedbackActor;
+  dashboardUrl: string;
+  // The player link, only for a Feedback that has a Recording at build time.
+  playerUrl?: string | null;
+  screenshotUrl: string | null;
+};
+
+type BuildFeedbackBlocksResult = {
+  blocks: SlackBlock[];
+  text: string;
+};
+
+/**
+ * Builds the Slack Block Kit payload for a feedback notification. Pure: callers
+ * pass a freshly minted screenshot URL since signed asset URLs are short-lived.
+ */
+export function buildFeedbackBlocks({
+  feedback,
+  status,
+  actor,
+  dashboardUrl,
+  playerUrl = null,
+  screenshotUrl,
+}: BuildFeedbackBlocksParams): BuildFeedbackBlocksResult {
+  const reviewerName = feedback.reviewerName ?? "Anonymous";
+
+  const blocks: SlackBlock[] = [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `*${reviewerName}*\n${feedback.comment}`,
+      },
+    },
+  ];
+
+  const contextElements: SlackBlock[] = [];
+
+  // A video Feedback names the Video, the time and the position on the frame
+  // where a page Feedback links its page.
+  if (feedback.videoId) {
+    contextElements.push({
+      type: "mrkdwn",
+      text: describeVideoLocation(feedback).join(" · "),
+    });
+  } else if (feedback.pageUrl) {
+    contextElements.push({
+      type: "mrkdwn",
+      text: `<${feedback.pageUrl}|${feedback.pageUrl}>`,
+    });
+  }
+
+  const environment = [feedback.browserName, feedback.os]
+    .filter((part): part is string => Boolean(part))
+    .join(" · ");
+
+  if (environment) {
+    contextElements.push({ type: "mrkdwn", text: environment });
+  }
+
+  // Slack rejects a context block without elements.
+  if (contextElements.length > 0) {
+    blocks.push({ type: "context", elements: contextElements });
+  }
+
+  if (screenshotUrl) {
+    blocks.push({
+      type: "image",
+      image_url: screenshotUrl,
+      alt_text: feedback.videoId ? "Video frame" : "Feedback screenshot",
+    });
+  }
+
+  blocks.push({
+    type: "section",
+    text: {
+      type: "mrkdwn",
+      text: `*Status:* ${statusBadge(status, actor)}`,
+    },
+  });
+
+  const openButton = {
+    type: "button",
+    text: { type: "plain_text", text: "Open in Faster Fixes" },
+    url: dashboardUrl,
+  };
+
+  // A section holds a single accessory, so two buttons need an actions block.
+  if (playerUrl) {
+    blocks.push({
+      type: "actions",
+      elements: [
+        openButton,
+        {
+          type: "button",
+          text: { type: "plain_text", text: "Play recording" },
+          url: playerUrl,
+        },
+      ],
+    });
+  } else {
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `<${dashboardUrl}|Open in Faster Fixes>`,
+      },
+      accessory: openButton,
+    });
+  }
+
+  const text = `New feedback from ${reviewerName}: ${feedback.comment}`;
+
+  return { blocks, text };
+}

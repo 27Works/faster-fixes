@@ -4,6 +4,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import type { Route } from "next";
+import Link from "next/link";
 
 const capabilities = [
   {
@@ -12,7 +14,7 @@ const capabilities = [
   },
   {
     title: "Full dev context, zero follow-up questions",
-    body: "The issue body contains the CSS selector, React component path, source file, click coordinates, an embedded screenshot, the client's browser, OS, and viewport, and the console logs and network requests captured before submission. A developer can open the issue and start working immediately.",
+    body: "The issue body contains the CSS selector, React component path, source file, click coordinates, an embedded screenshot, the client's browser, OS, and viewport, a link to replay the last minute on the page, and a timeline of the client's steps, console logs and network requests before submission. A developer can open the issue and start working immediately.",
   },
   {
     title: "Status stays in sync, both ways",
@@ -29,14 +31,14 @@ export function GithubCapabilitiesSection() {
     <section className="w-full py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             What lands in GitHub
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
             Everything lands in the issue
           </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Client feedback, dev context, and status — synchronized between
+          <p className="mt-4 text-lg text-muted-foreground">
+            Client feedback, dev context, and status stay synchronized between
             the Faster Fixes inbox and your GitHub repository.
           </p>
         </div>
@@ -53,6 +55,18 @@ export function GithubCapabilitiesSection() {
             </Card>
           ))}
         </div>
+
+        <p className="mx-auto mt-10 max-w-2xl text-center text-muted-foreground">
+          Your project managers work on a board? The{" "}
+          <Link
+            href={"/integrations/trello" as Route}
+            className="text-foreground underline underline-offset-4 hover:no-underline"
+          >
+            Trello integration
+          </Link>{" "}
+          mirrors the same feedback as a card, and its status stays in sync with
+          the GitHub issue.
+        </p>
       </div>
     </section>
   );

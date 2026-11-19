@@ -1,7 +1,19 @@
-import { cloudflare } from "@better-upload/server/clients";
+import "server-only";
 
-export const s3Client = cloudflare({
-  accountId: process.env.R2_ACCOUNT_ID!,
-  accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-});
+import { getStorageProvider } from "./config";
+import { LocalStorage } from "./local";
+import { S3Storage } from "./s3";
+import type { StorageBackend } from "./types";
+
+export function createStorage(): StorageBackend {
+  const provider = getStorageProvider();
+  switch (provider) {
+    case "local":
+      return new LocalStorage();
+    case "s3":
+    case "r2":
+      return new S3Storage(provider);
+    default:
+      throw new Error(`Unsupported storage provider: ${provider}`);
+  }
+}

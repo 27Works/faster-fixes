@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  packages:
+    name: Publishable packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Builds, typechecks, lints, then packs each @fasterfixes/* tarball and lints it with publint,
+      # so a broken "exports" or "files" field fails the PR instead of the release.
+      # The widget build also fails when its minified IIFE exceeds the footprint ceiling
+      # recorded next to the check in packages/widget/tsdown.config.ts.
+      - run: pnpm check:packages
+
+  knip:
+    name: Unused code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Knip resolves the `@collections/*` alias to the untracked `.source` folder fumadocs
+      # generates; without it every blog and docs MDX file reads as unused.
+      - run: pnpm --filter web exec fumadocs-mdx
+
+      # Unused files, exports and dependencies across every workspace.
+      - run: pnpm knip
+
+  format:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The commit hook formats staged files only, and --no-verify skips it, so this is
+      # where an unformatted file stops a pull request.
+      - run: pnpm format:check
+
+  web:
+    name: Web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # A fresh clone has none of the generated sources the web app typechecks against:
+      # the @fasterfixes/* package builds, the Prisma client and the Next.js route types.
+      # Without these three steps the checks below fail on missing modules, not on the change.
+      - run: pnpm build:packages
+
+      - run: pnpm --filter @workspace/db db:gen
+
+      - run: pnpm --filter web exec next typegen
+
+      # The required checks of AGENTS.md, in the order the commit hook runs them.
+      # Every local/ convention rule is at error in plain lint (ADR-0015), so this job is
+      # where a convention violation stops a pull request.
+      - run: pnpm typecheck
+
+      - run: pnpm lint
+
+      - run: pnpm test
+
+  e2e:
+    name: Widget end to end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # The dev server resolves the Embeds from their builds and the auth module from the
+      # Prisma client, so both are generated before the suite starts it.
+      - run: pnpm build:packages
+
+      - run: pnpm --filter @workspace/db db:gen
+
+      - run: pnpm --filter web exec playwright install --with-deps chromium firefox
+
+      # Starts `next dev` itself with placeholder env values; the widget API is stubbed in
+      # the browser, so no database or secret is needed.
+      - run: pnpm --filter web test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            apps/web/playwright-report/
+            apps/web/test-results/
+          retention-days: 7

@@ -1,18 +1,35 @@
-import { GITHUB_REPO_URL } from "@/app/_constants/app";
-import { signupUrl } from "@/app/_constants/routes";
-import { Button } from "@workspace/ui/components/button";
-import { GithubIcon } from "@workspace/ui/components/icons/github-icon";
-import { ArrowRightIcon } from "lucide-react";
-import Link from "next/link";
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
+import { COMPETITOR_PRICES } from "@/app/(public)/_helpers/competitor-prices";
+import {
+  formatAmount,
+  formatPrice,
+} from "@/app/(public)/_helpers/format-competitor-price";
+import { SeatPricingChart } from "../../_components/illustrations/seat-pricing-chart";
+import { VsActions } from "../../_features/vs-actions";
+import {
+  type VsPricingCard,
+  VsPricingCards,
+} from "../../_features/vs-pricing-cards";
+import { VsSection } from "../../_features/vs-section";
+import { SectionBody } from "../../../features/_components/section-body";
 
-const cards: {
-  vendor: string;
-  plan: string;
-  price: string;
-  suffix?: string;
-  note: string;
-  highlight?: boolean;
-}[] = [
+const { starter, team } = COMPETITOR_PRICES.markerIo.plans;
+const { extraSeatBilledYearly } = COMPETITOR_PRICES.markerIo.otherPrices;
+const starterAnnual = formatAmount(
+  starter.billedYearlyAmount,
+  starter.currency,
+);
+const teamAnnual = formatAmount(team.billedYearlyAmount, team.currency);
+
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const agencyPrice = PLAN_PRICES[SubscriptionPlanName.Agency];
+
+const cards: VsPricingCard[] = [
   {
     vendor: "FasterFixes · Self-hosted",
     plan: "Open source under AGPL-3.0",
@@ -23,88 +40,67 @@ const cards: {
   },
   {
     vendor: "FasterFixes · Hosted",
-    plan: "Pro plan, up to 5 members",
-    price: "$20",
+    plan: `Pro plan, up to ${proPlan.seats} members`,
+    price: `$${proPrice}`,
     suffix: "/ month",
-    note: "Flat rate. Agency tier unlocks unlimited members at $99/month. No per-seat charges as your team grows.",
+    note: `Flat rate. Agency tier unlocks unlimited members at $${agencyPrice}/month. No per-seat charges as your team grows.`,
   },
   {
     vendor: "Marker.io · Team",
-    plan: "15 seats included (annual billing)",
-    price: "$149",
+    plan: `${team.seats} seats included (annual billing)`,
+    price: teamAnnual,
     suffix: "/ month",
-    note: "Required to unlock Jira, session replay, and developer tools. Extra seats $6/month each. Starter is $39/month annual but excludes Jira and devtools.",
+    note: `Required to unlock Jira, session replay, and developer tools. Extra seats ${formatPrice(extraSeatBilledYearly)}/month each. Starter is ${starterAnnual}/month annual but excludes Jira and devtools.`,
   },
+];
+
+// Team is the cheapest Marker.io plan with Jira, session replay and devtools,
+// so the chart compares against it rather than the cheaper Starter seats.
+const markerIoTiers = [
+  { name: team.name, seats: team.seats, monthlyPrice: team.billedYearlyAmount },
 ];
 
 export function MarkerIoPricingSection() {
   return (
-    <section className="w-full py-16 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
-            Pricing
+    <VsSection
+      eyebrow="Pricing"
+      title="Free if you self-host. Flat rate if you don't."
+    >
+      <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-2 lg:gap-16">
+        <SectionBody>
+          <p>
+            FasterFixes is open source. The lowest plan in any honest comparison
+            is &quot;free, forever, on your own server.&quot; If you would
+            rather not run it yourself, the hosted plans are flat-rate, not
+            per-seat. Marker.io uses tiered per-seat pricing where Jira sync,
+            session replay, and developer tools are gated behind the Team plan
+            at {teamAnnual}/month annual.
           </p>
-          <h2 className="text-3xl font-bold md:text-4xl">
-            Free if you self-host. Flat rate if you don&apos;t.
-          </h2>
-          <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
-            FasterFixes is open source. The lowest plan in any honest
-            comparison is &quot;free, forever, on your own server.&quot; If you
-            would rather not run it yourself, the hosted plans are flat-rate —
-            not per-seat. Marker.io uses tiered per-seat pricing where Jira
-            sync, session replay, and developer tools are gated behind the
-            Team plan at $149/month annual.
-          </p>
-        </div>
+        </SectionBody>
 
-        <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
-          {cards.map((card) => (
-            <div
-              key={card.vendor}
-              className={`rounded-xl border p-7 ${
-                card.highlight ? "border-foreground bg-muted/30" : ""
-              }`}
-            >
-              <p className="text-muted-foreground text-sm font-semibold tracking-wider uppercase">
-                {card.vendor}
-              </p>
-              <p className="mt-2 text-sm">{card.plan}</p>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-bold">{card.price}</span>
-                {card.suffix && (
-                  <span className="text-muted-foreground text-sm">
-                    {card.suffix}
-                  </span>
-                )}
-              </div>
-              <p className="text-muted-foreground mt-4 text-sm leading-relaxed">
-                {card.note}
-              </p>
-            </div>
-          ))}
+        <div className="rounded-2xl bg-muted/50 p-4 sm:p-8">
+          <SeatPricingChart
+            competitorName="Marker.io Team"
+            tiers={markerIoTiers}
+            extraSeatPrice={extraSeatBilledYearly.maxAmount}
+          />
         </div>
+      </div>
 
-        <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <Button asChild size="lg">
-            <Link href={signupUrl}>
-              Start hosted, free
-              <ArrowRightIcon />
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="lg">
-            <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer">
-              <GithubIcon className="size-5" />
-              Self-host from GitHub
-            </a>
-          </Button>
-        </div>
+      <div className="mt-12 md:mt-16">
+        <VsPricingCards cards={cards} />
+      </div>
 
-        <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-center text-sm">
+      <div className="mt-10 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <VsActions
+          signupLabel="Start hosted, free"
+          githubLabel="Self-host from GitHub"
+        />
+        <p className="text-sm text-muted-foreground">
           Prices reflect each vendor&apos;s public pricing page at time of
           writing.
         </p>
       </div>
-    </section>
+    </VsSection>
   );
 }

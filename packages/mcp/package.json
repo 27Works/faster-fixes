@@ -1,6 +1,6 @@
 {
   "name": "@fasterfixes/mcp",
-  "version": "0.0.5",
+  "version": "0.2.0",
   "description": "MCP server for Faster Fixes — lets AI agents list and manage client feedback",
   "type": "module",
   "license": "MIT",
@@ -8,7 +8,7 @@
   "homepage": "https://faster-fixes.com",
   "repository": {
     "type": "git",
-    "url": "https://github.com/manucoffin/faster-fixes.git",
+    "url": "git+https://github.com/manucoffin/faster-fixes.git",
     "directory": "packages/mcp"
   },
   "bugs": {
@@ -56,7 +56,9 @@
     "build": "tsdown",
     "dev": "tsx src/index.ts",
     "lint": "eslint . --max-warnings 0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
@@ -69,6 +71,8 @@
     "eslint": "^9.39.1",
     "tsdown": "^0.21.4",
     "tsx": "^4.21.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
   }
 }

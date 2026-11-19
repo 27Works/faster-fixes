@@ -1,3 +1,6 @@
+import type { Route } from "next";
+import Link from "next/link";
+
 const cards = [
   {
     title: "Feedback flows to your AI coding agent",
@@ -5,11 +8,24 @@ const cards = [
   },
   {
     title: "React component tree captured automatically",
-    body: "When a client annotates a bug, FasterFixes captures the React component name, props, and DOM selector at the click point. Developers receive a report that maps to the codebase, not a pixel coordinate. No reproduction steps required.",
+    body: "When a client annotates a bug on a React site, FasterFixes captures the React component name, props, and DOM selector at the click point. Developers receive a report that maps to the codebase, not a pixel coordinate. No reproduction steps required.",
   },
   {
     title: "No client account required",
-    body: "Guests annotate directly on the page — no signup, no email confirmation, no per-seat fee for the client. The friction that kills feedback loops with non-technical stakeholders is gone.",
+    body: (
+      <>
+        Guests{" "}
+        <Link
+          href={"/features/website-annotation" as Route}
+          className="text-foreground underline underline-offset-4 hover:no-underline"
+        >
+          annotate the live website
+        </Link>{" "}
+        directly, with no signup, no email confirmation, and no per-seat fee for
+        the client. The friction that kills feedback loops with non-technical
+        stakeholders is gone.
+      </>
+    ),
   },
   {
     title: "Self-host on your own stack",
@@ -22,7 +38,7 @@ export function RuttlFeatureCardsSection() {
     <section className="w-full py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             What FasterFixes does differently
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
@@ -32,12 +48,9 @@ export function RuttlFeatureCardsSection() {
 
         <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
           {cards.map((card) => (
-            <div
-              key={card.title}
-              className="bg-muted/30 rounded-xl border p-7"
-            >
+            <div key={card.title} className="rounded-xl border bg-muted/30 p-7">
               <h3 className="text-lg font-semibold">{card.title}</h3>
-              <p className="text-muted-foreground mt-3 leading-relaxed">
+              <p className="mt-3 leading-relaxed text-muted-foreground">
                 {card.body}
               </p>
             </div>

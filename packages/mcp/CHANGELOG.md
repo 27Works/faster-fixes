@@ -1,5 +1,29 @@
 # @fasterfixes/mcp
 
+## 0.2.0
+
+### Minor Changes
+
+- [#440](https://github.com/manucoffin/faster-fixes/pull/440) [`91ab688`](https://github.com/manucoffin/faster-fixes/commit/91ab6885f1700275319aa4dae5a8036cba6ac162) Thanks [@manucoffin](https://github.com/manucoffin)! - New `get_feedback` tool: takes a `feedback_id` and returns one feedback item in full as markdown, with its Screenshot as an image. When the feedback has a Recording, a Timeline section lists what the reviewer did before submitting, merged in time order with the console logs and network requests. `list_feedbacks` describes the Recording line each recorded item carries, and its workflow becomes list, get one in full with `get_feedback`, fix, update the status. The `GetFeedbackJsonResponse`, `FeedbackRecordingJson` and `RecordingStepJson` types match what the agent API returns for a single feedback.
+
+## 0.1.0
+
+### Minor Changes
+
+- [#358](https://github.com/manucoffin/faster-fixes/pull/358) [`b67f273`](https://github.com/manucoffin/faster-fixes/commit/b67f27305e5320cc650ef8945592c039e3e6df77) Thanks [@manucoffin](https://github.com/manucoffin)! - New `list_videos` tool: lists the project's videos that are ready for review, with their id, title, filename, duration, pixel size and open feedback count. `list_feedbacks` accepts `video_id` to list one video's feedback; it cannot be combined with `page_url`. The `FeedbackJson` type gains `videoId` and `selection`, `pageUrl` becomes nullable, and `ListFeedbacksJsonResponse` gains the optional `video` block, matching what the agent API returns.
+
+## 0.0.7
+
+### Patch Changes
+
+- [#279](https://github.com/manucoffin/faster-fixes/pull/279) [`4c9403d`](https://github.com/manucoffin/faster-fixes/commit/4c9403d70b214a37e1206c47eb8a045bd236a7d7) Thanks [@manucoffin](https://github.com/manucoffin)! - `list_feedbacks` tool: the description now states that each Feedback carries the Custom metadata the site attached, next to the captured console logs and network requests. The `FeedbackJson` type gains `customMetadata`, `metadata` and `diagnosticTrail` so it matches what the agent API returns. No behavioral change.
+
+## 0.0.6
+
+### Patch Changes
+
+- [#173](https://github.com/manucoffin/faster-fixes/pull/173) [`24fa3b3`](https://github.com/manucoffin/faster-fixes/commit/24fa3b338844a4b35147ac18fbbda9642d9904e7) Thanks [@manucoffin](https://github.com/manucoffin)! - `create_feedbacks` tool: the summary returned when the plan limit is reached separates its two sentences with a colon rather than an em dash. No behavioral change.
+
 ## 0.0.5
 
 - `list_feedbacks` tool description now states that captured console logs and network requests (the Diagnostic Trail) are included in the returned feedback. No behavioral change — the trail already flows through from the agent API; this just makes it discoverable to the calling agent.

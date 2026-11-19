@@ -1,15 +1,14 @@
 const points = [
   "You are a solo creator on Ruttl's free Basic plan and never expect to grow past 5 pages.",
-  "Your team does not work in React or Next.js, and the framework-native widget is not a fit.",
   "Your stakeholders already live inside Ruttl's review workflow and you have no appetite for migration.",
 ];
 
 export function RuttlHonestTakeSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
+    <section className="w-full border-y bg-muted/30 py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Honest take
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
@@ -21,7 +20,7 @@ export function RuttlHonestTakeSection() {
           {points.map((point) => (
             <li
               key={point}
-              className="text-muted-foreground bg-background rounded-xl border p-5 text-base leading-relaxed"
+              className="rounded-xl border bg-background p-5 text-base leading-relaxed text-muted-foreground"
             >
               {point}
             </li>

@@ -1,18 +1,26 @@
 import { GITHUB_REPO_URL } from "@/app/_constants/app";
-import type { FaqItem } from "@/app/_features/seo/faq-schema";
+import { PLAN_LIMITS, SubscriptionPlanName } from "@/app/_domains/subscription";
+import type { FaqItem } from "@/app/_components/seo/faq-schema";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
+import type { Route } from "next";
+import Link from "next/link";
 import type * as React from "react";
 
-export const pricingFaqs: FaqItem[] = [
+type RichFaqItem = FaqItem & { content?: React.ReactNode };
+
+const freePlan = PLAN_LIMITS[SubscriptionPlanName.Free];
+
+const freeFeedbackLimit = PLAN_LIMITS[SubscriptionPlanName.Free].feedbacks;
+
+export const pricingFaqs: RichFaqItem[] = [
   {
     question: "Is there really a free plan?",
-    answer:
-      "Yes. The Free plan includes 1 project with up to 50 feedback items and is not time-limited. It is designed for solo developers or anyone who wants to try FasterFixes on a real project before committing to a paid plan.",
+    answer: `Yes. The Free plan includes ${freePlan.projects} project with up to ${freeFeedbackLimit} feedback items and is not time-limited. It is designed for solo developers or anyone who wants to try FasterFixes on a real project before committing to a paid plan.`,
   },
   {
     question: "Can I upgrade or downgrade at any time?",
@@ -27,7 +35,7 @@ export const pricingFaqs: FaqItem[] = [
   {
     question: "Do you offer annual billing?",
     answer:
-      "Yes. Annual billing saves you two months compared to paying monthly — effectively 10 months for the price of 12.",
+      "Yes. Annual billing saves you two months compared to paying monthly, effectively 10 months for the price of 12.",
   },
   {
     question: "Is FasterFixes open source? Can I self-host?",
@@ -36,22 +44,36 @@ export const pricingFaqs: FaqItem[] = [
   {
     question: "What payment methods do you accept?",
     answer:
-      "We use Stripe for billing. You can pay with any major credit or debit card. All payments are processed securely through Stripe — we never store your card details.",
+      "We use Stripe for billing. You can pay with any major credit or debit card. All payments are processed securely through Stripe. We never store your card details.",
   },
   {
-    question: "Do I need a paid plan for the MCP server or GitHub integration?",
+    question:
+      "Do I need a paid plan for the MCP server or the tracker integrations?",
     answer:
-      "The MCP server works on all plans, including Free. The GitHub integration — which automatically creates issues from feedback — requires a Pro or Agency plan.",
+      "The MCP server works on all plans, including Free. The GitHub, Linear, Jira and Trello integrations, which automatically create issues or cards from feedback, require a Pro or Agency plan.",
+    content: (
+      <>
+        The MCP server works on all plans, including Free. The GitHub, Linear,
+        Jira and{" "}
+        <Link
+          href={"/integrations/trello" as Route}
+          className="text-foreground underline underline-offset-4"
+        >
+          Trello
+        </Link>{" "}
+        integrations, which automatically create issues or cards from feedback,
+        require a Pro or Agency plan.
+      </>
+    ),
   },
   {
     question: "What counts as a feedback item?",
-    answer:
-      "Each time a client submits feedback through the widget, it counts as one feedback item. The Free plan includes up to 50. Pro and Agency plans have unlimited feedback.",
+    answer: `Each time a client submits feedback through the widget, it counts as one feedback item. The Free plan includes up to ${freeFeedbackLimit}. Pro and Agency plans have unlimited feedback.`,
   },
   {
     question: "How does team member pricing work?",
     answer:
-      "There are no per-seat charges. Each plan includes a set number of team members — 1 on Free, 5 on Pro, unlimited on Agency. You only pay the flat plan price.",
+      "There are no per-seat charges. Each plan includes a set number of team members: 1 on Free, 5 on Pro, unlimited on Agency. You only pay the flat plan price.",
   },
 ];
 
@@ -93,8 +115,8 @@ export function PricingFaqSection() {
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent>
-                  <p className="text-muted-foreground text-lg md:text-xl">
-                    {linkifyAnswer(faq.answer)}
+                  <p className="text-lg text-muted-foreground md:text-xl">
+                    {faq.content ?? linkifyAnswer(faq.answer)}
                   </p>
                 </AccordionContent>
               </AccordionItem>

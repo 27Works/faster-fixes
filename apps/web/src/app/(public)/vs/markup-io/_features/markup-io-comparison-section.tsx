@@ -1,4 +1,15 @@
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
 import { CheckIcon, XIcon } from "lucide-react";
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import { formatPrice } from "../../../_helpers/format-competitor-price";
+
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const { pro: markupIoPro, business } = COMPETITOR_PRICES.markupIo.plans;
 
 type Cell = string | { type: "yes" | "no"; note?: string };
 
@@ -14,22 +25,32 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Pricing model",
     cells: [
-      "$0 self-hosted / $20/mo Pro (up to 5 members)",
-      "$79/mo Pro / Enterprise custom",
+      `$0 self-hosted / $${proPrice}/mo Pro (up to ${proPlan.seats} members)`,
+      `${formatPrice(markupIoPro)}/mo Pro / ${formatPrice(business)}/mo Business / Enterprise custom`,
     ],
   },
   {
     label: "Free plan",
     cells: [
-      { type: "yes", note: "Free forever — self-hosted or hosted" },
+      { type: "yes", note: "Free forever: self-hosted or hosted" },
       { type: "no", note: "Removed January 2025" },
     ],
   },
   {
-    label: "Integrations (GitHub, Linear, Jira)",
+    label: "Integrations (GitHub, Linear, Jira, Trello)",
     cells: [
-      { type: "yes", note: "GitHub, Linear, Jira included from $20/mo" },
-      { type: "no", note: "Enterprise-only" },
+      {
+        type: "yes",
+        note: `GitHub, Linear, Jira, Trello included from $${proPrice}/mo`,
+      },
+      { type: "no", note: "No native sync · Slack and Zapier only" },
+    ],
+  },
+  {
+    label: "Trello sync",
+    cells: [
+      { type: "yes", note: "Bidirectional · status follows the mapped lists" },
+      { type: "no", note: "Zapier only" },
     ],
   },
   {
@@ -62,9 +83,23 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     cells: [{ type: "yes" }, { type: "yes" }],
   },
   {
-    label: "Framework-native widget",
+    label: "Video review (uploaded videos)",
     cells: [
-      { type: "yes", note: "React / Next.js SDK" },
+      { type: "yes", note: "Timestamped · area on the frame" },
+      { type: "yes", note: "Timestamped comments" },
+    ],
+  },
+  {
+    label: "Session replay",
+    cells: [
+      { type: "yes", note: "Last minute before each feedback · all plans" },
+      { type: "no" },
+    ],
+  },
+  {
+    label: "React package",
+    cells: [
+      { type: "yes", note: "Plus a script tag for any site" },
       { type: "no", note: "Generic browser tool" },
     ],
   },
@@ -74,17 +109,17 @@ const headers = ["FasterFixes", "Markup.io"] as const;
 
 function renderCell(cell: Cell) {
   if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
+    return <span className="text-sm text-muted-foreground">{cell}</span>;
   }
   return (
     <div className="flex flex-col gap-1">
       {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
+        <CheckIcon className="size-5 text-success" aria-label="Yes" />
       ) : (
-        <XIcon className="text-destructive size-5" aria-label="No" />
+        <XIcon className="size-5 text-destructive" aria-label="No" />
       )}
       {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
+        <span className="text-xs text-muted-foreground">{cell.note}</span>
       )}
     </div>
   );
@@ -92,10 +127,10 @@ function renderCell(cell: Cell) {
 
 export function MarkupIoComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
+    <section className="w-full border-y bg-muted/30 py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Compare
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">

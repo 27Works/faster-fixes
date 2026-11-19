@@ -15,10 +15,12 @@ model Project {
   widgetConfig WidgetConfig?
   reviewers    Reviewer[]
   feedback     Feedback[]
+  videos       Video[]
   gitHubLink   ProjectGitHubLink?
   linearLink   ProjectLinearLink?
   jiraLink     ProjectJiraLink?
   slackLink    ProjectSlackLink?
+  trelloLink   ProjectTrelloLink?
 
   @@index([organizationId])
   @@index([publicId])
@@ -46,16 +48,24 @@ model Reviewer {
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  // Set for a Reviewer of a Video; null for a Widget Reviewer. Postgres treats
+  // nulls as distinct, so the unique pair binds video Reviewers only.
+  videoId String?
+  video   Video?  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
   name     String
   token    String  @unique
   isActive Boolean @default(true)
 
   feedback Feedback[]
 
+  @@unique([videoId, name])
   @@index([projectId])
   @@map("reviewer")
 }
 
+/// A trigger (`feedback_clear_rank_on_status_change`, see ADR-0017) deletes the
+/// Feedback's `FeedbackRank` row whenever `status` changes, whatever the writer.
 model Feedback {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
@@ -66,13 +76,27 @@ model Feedback {
   reviewerId String
   reviewer   Reviewer @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
 
+  // A Feedback with a `videoId` is a video Feedback, any other a page Feedback
+  // (ADR-0020). `projectId` stays required and equals the Video's Project.
+  videoId String?
+  video   Video?  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
   status  String @default("new")
   comment String
-  pageUrl String
+  pageUrl String?
 
   clickX   Float?
   clickY   Float?
   selector String?
+
+  // Video Selection: an instant (`endMs` null) or a range, and an optional
+  // point or area on the frame in normalized 0..1 coordinates.
+  startMs     Int?
+  endMs       Int?
+  frameX      Float?
+  frameY      Float?
+  frameWidth  Float?
+  frameHeight Float?
 
   browserName    String?
   browserVersion String?
@@ -87,8 +111,28 @@ model Feedback {
   // the widget read path (kept out of the hot getFeedback query).
   diagnosticTrail Json?
 
+  // Custom metadata: key/value pairs the host site declared, normalised on
+  // ingest (ADR-0018). Never selected on the widget read path: a Reviewer must
+  // not see another Reviewer's pairs.
+  customMetadata Json?
+
   screenshotId String?
   screenshot   Asset?  @relation("FeedbackScreenshot", fields: [screenshotId], references: [id], onDelete: SetNull)
+
+  // Recording: a gzip file of the page's last moments before the Selection,
+  // attached once after creation by the Widget (ADR-0021). The duration and
+  // the replay format version are the ones the Widget declared at upload.
+  // Never selected on the widget read path.
+  recordingId            String?
+  recording              Asset?  @relation("FeedbackRecording", fields: [recordingId], references: [id], onDelete: SetNull)
+  recordingDurationMs    Int?
+  recordingFormatVersion Int?
+  // The steps derived from the Recording file, `{ startedAt, endedAt, steps }`,
+  // and the derivation version that produced them. Filled by the first read of
+  // the single Feedback, derived again when the version is older. Removing the
+  // Recording must clear both.
+  recordingSteps         Json?
+  recordingStepsVersion  Int?
 
   assigneeId String?
   assignee   Member? @relation(fields: [assigneeId], references: [id], onDelete: SetNull)
@@ -96,10 +140,25 @@ model Feedback {
   issueLink       FeedbackIssueLink?
   linearIssueLink FeedbackLinearIssueLink?
   jiraIssueLink   FeedbackJiraIssueLink?
+  trelloIssueLink FeedbackTrelloIssueLink?
   slackMessage    FeedbackSlackMessage?
+  rank            FeedbackRank?
 
   @@index([projectId])
   @@index([reviewerId])
   @@index([assigneeId])
+  @@index([videoId])
   @@map("feedback")
+}
+
+/// A Feedback's place within its Status column (ADR-0017). Kept out of the
+/// `feedback` row so a Rank write never bumps `Feedback.updatedAt`.
+model FeedbackRank {
+  feedbackId String   @id
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  // Fractional-index key, compared lexicographically.
+  key String
+
+  @@map("feedback_rank")
 }

@@ -1,9 +1,11 @@
+import { PLAN_PRICES, SubscriptionPlanName } from "@/app/_domains/subscription";
 import { APP_URL } from "@/app/_constants/app";
 import { SITE_NAME } from "@/app/_constants/seo";
-import { BreadcrumbSchema } from "@/app/_features/seo/breadcrumb-schema";
-import { FaqSchema } from "@/app/_features/seo/faq-schema";
-import { SoftwareApplicationSchema } from "@/app/_features/seo/software-application-schema";
-import { WebPageSchema } from "@/app/_features/seo/web-page-schema";
+import { BreadcrumbSchema } from "@/app/_components/seo/breadcrumb-schema";
+import { FaqSchema } from "@/app/_components/seo/faq-schema";
+import { SoftwareApplicationSchema } from "@/app/(public)/_components/seo/software-application-schema";
+import { WebPageSchema } from "@/app/_components/seo/web-page-schema";
+import { buildSocialMetadata } from "@/app/(public)/_helpers/build-social-metadata";
 import type { Metadata } from "next";
 import { VsCrossLinks } from "../_features/vs-cross-links";
 import { MarkupIoBreadcrumb } from "./_features/markup-io-breadcrumb";
@@ -16,15 +18,17 @@ import {
 } from "./_features/markup-io-faq-section";
 import { MarkupIoHero } from "./_features/markup-io-hero";
 import { MarkupIoHonestTakeSection } from "./_features/markup-io-honest-take-section";
+import { markupIoPriceRise } from "./_helpers/markup-io-prices";
 import { MarkupIoPricingSection } from "./_features/markup-io-pricing-section";
 import { MarkupIoWhySwitchSection } from "./_features/markup-io-why-switch-section";
 
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+
 const pageUrl = `${APP_URL}/vs/markup-io`;
-const title = `Markup.io Alternative — Open-Source & Developer-First | ${SITE_NAME}`;
-const description =
-  "Markup.io raised prices 172% and killed its free plan. FasterFixes is open-source, self-hostable, $20/mo — feedback flows to Claude Code, Cursor, Linear, and Jira.";
+const title = `Markup.io Alternative: Open-Source & Developer-First | ${SITE_NAME}`;
+const description = `Markup.io raised prices ${markupIoPriceRise}% and killed its free plan. FasterFixes is open-source, self-hostable, $${proPrice}/mo: feedback flows to Claude Code, Cursor, Linear, and Jira.`;
 const datePublished = "2026-05-12T00:00:00.000Z";
-const dateModified = "2026-05-12T00:00:00.000Z";
+const dateModified = "2026-11-12T00:00:00.000Z";
 
 export const metadata: Metadata = {
   title: {
@@ -46,16 +50,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: pageUrl,
   },
-  openGraph: {
+  ...buildSocialMetadata({
+    path: "/vs/markup-io",
     title,
     description,
-    url: pageUrl,
-    type: "website",
-  },
-  twitter: {
-    title,
-    description,
-  },
+  }),
 };
 
 export default function Page() {

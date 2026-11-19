@@ -1,29 +1,38 @@
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
 import { GITHUB_REPO_URL } from "@/app/_constants/app";
 import { signupUrl } from "@/app/_constants/routes";
 import { Button } from "@workspace/ui/components/button";
 import { GithubIcon } from "@workspace/ui/components/icons/github-icon";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
+import { markupIoPriceRise } from "../_helpers/markup-io-prices";
 import { HeroDotBackground } from "../../../(home)/_features/hero/hero-dot-background.client";
+
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
 
 export function MarkupIoHero() {
   return (
     <HeroDotBackground>
       <section className="w-full py-20 md:py-24">
         <div className="container mx-auto max-w-3xl px-4 text-center">
-          <p className="text-muted-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-4 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Markup.io alternative
           </p>
           <h1 className="text-4xl leading-tight font-normal md:text-5xl lg:text-6xl">
             The open-source Markup.io alternative for developer teams
           </h1>
-          <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg md:text-xl">
-            Markup.io raised prices 172% in January 2025 and removed its free
-            plan. FasterFixes is the open-source alternative: AGPL-3.0, self-
-            hostable for free, or $20 a month flat for up to five members.
-            Feedback carries a screenshot, DOM selector, React component tree,
-            console logs, and network requests, and syncs to GitHub, Linear, or
-            Jira.
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
+            Markup.io raised prices {markupIoPriceRise}% in January 2025 and
+            removed its free plan. FasterFixes is the open-source alternative:
+            AGPL-3.0, self- hostable for free, or ${proPrice} a month flat for
+            up to {proPlan.seats} members. Feedback carries a screenshot, DOM
+            selector, React component tree, console logs, and network requests,
+            and syncs to GitHub, Linear, or Jira.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">

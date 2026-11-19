@@ -1,22 +1,66 @@
 # Faster Fixes
 
-A widget that lets a website's end-users report bugs and feedback in-page; reports flow into a project inbox, can be mirrored to external trackers (GitHub Issues, Linear), and announced to notification channels (Slack).
+A widget that lets a website's end-users report bugs and feedback in-page, and a review page that lets a customer's clients annotate an uploaded video; reports flow into a project inbox, can be mirrored to external trackers (GitHub Issues, Linear, Jira, Trello), and announced to notification channels (Slack).
 
 ## Language
 
 ### Reporting
 
 **Feedback**:
-A bug report or comment submitted via the widget on a customer's site. The atomic unit of the inbox.
-_Avoid_: Issue (reserved for tracker-side artifacts), Ticket, Bug report.
+A bug report or comment a **Reviewer** submits, through the **Widget** on a customer's site or on a **Video** through its **Share link**. The atomic unit of the inbox.
+_Avoid_: Issue (reserved for tracker-side artifacts), Ticket, Bug report, Annotation (the act of giving Feedback on a Video, never the Feedback itself).
 
 **Reviewer**:
-The end-user of the customer's site who submitted a Feedback through the widget.
-_Avoid_: Reporter, Submitter, User.
+A person who submits Feedback without a Faster Fixes account: the end-user of the customer's site, through the Widget, or the holder of a Video's **Share link**. Known by a name; on a Video the name is given by the person or generated for them, unique per Video and held by the browser that first claimed it: the same name is the same Reviewer.
+_Avoid_: Reporter, Submitter, User, Guest.
 
 **Project**:
-A Faster Fixes container scoped to one website (one widget install). Holds Feedback, settings, and at most one tracker link per integration.
+A Faster Fixes container for one client's scope: at most one website (one widget install) and any number of **Videos**. Holds Feedback, settings, and at most one **Project link** per **Integration**.
 _Avoid_: Site, App, Workspace.
+
+**Widget**:
+The in-page reporting UI a Reviewer uses to submit and browse Feedback on a customer's site. One Widget per Project, whatever the **Embed** it was installed through.
+_Avoid_: Plugin, SDK, Snippet (the install code of an Embed, not the Widget itself).
+
+**Embed**:
+A way of installing the **Widget** on a site: the **script embed** (a script tag, no build step) or a **framework embed** (a package for one rendering runtime: React, Vue, Angular, Svelte). A framework embed exists per runtime, never per meta-framework: a Nuxt site installs the Vue embed, an Analog site installs the Angular embed, a SvelteKit site installs the Svelte embed, a Next.js or Remix site installs the React embed. Every Embed exposes the same customization and behaviour; an Embed changes how the Widget is installed, never what it does.
+_Avoid_: Integration (reserved for external systems), Adapter, Wrapper (implementation vocabulary).
+
+### Capture
+
+**Selection**:
+What a Feedback is about. On a page: the element a Reviewer clicked in annotation mode, together with the click point inside it. On a **Video**: the instant or time range the Reviewer marked, with an optional point or area on the frame.
+_Avoid_: Target, Highlighted element, Annotation (the mode, not its result), Timecode (the instant alone, not the Selection), Marker.
+
+**Pin**:
+The marker the Widget shows on the live page at the location of an existing Feedback. Lives on the page, never on a Screenshot.
+_Avoid_: Marker, Dot, Annotation.
+
+**Screenshot**:
+The capture of the Reviewer's viewport taken at the moment of Selection and attached to the Feedback. Best-effort: a Feedback may have none, and a late capture may be of lower fidelity.
+_Avoid_: Capture (the act of taking it), Image, Attachment.
+
+**Recording**:
+A demonstration over time of what happened on the page, attached to a Feedback. Today it has one form: the replay of the moments leading up to the Feedback, the page's content as it changed and the Reviewer's interactions with it, taken with no step for the Reviewer. That form is a reconstruction of the page, not a film of the screen, and carries no voice. It ends at the Selection and never shows the Widget's own interface. It never holds what the Reviewer typed, nor what the customer's site marked as sensitive. Fixed when the Feedback is created: never added or changed afterwards, though the team can remove it and keep the Feedback. Best-effort: a Feedback may have none. A film of the screen that a Reviewer makes on purpose, with or without their voice, would be another form of Recording, never a Video.
+_Avoid_: Video (a file uploaded for review), Screen recording, Session replay (a Recording exists only attached to a Feedback), Replay.
+
+**Selection frame**:
+The outline of the Selection and its click point drawn in the inbox over the Screenshot, and over the last instant of the Recording. Derived from the Selection's geometry at capture time, never baked into the Screenshot; the viewer can hide it.
+_Avoid_: Highlight, Overlay, Annotation.
+
+### Video review
+
+**Video**:
+A video file a User uploads into a Project so Reviewers can give Feedback on it. Belongs to the Project like the website does: the Project's Trackers and Notification channels apply to its Feedback, and the Project's board holds it. Its annotations are open or closed by a User; closed keeps the Video and its Feedback viewable through the Share link but accepts no new or changed Feedback. Deleted by a User, at once and for good: its Feedback and Reviewers go with it, its Share link stops working, and Issues already mirrored to a Tracker stay as they are.
+_Avoid_: Media, Clip, Asset (the stored file, not the reviewable thing), Video project, Version (a revised cut is a new Video).
+
+**Share link**:
+The unguessable URL that grants whoever holds it access to review a Video. One per Video at a time; issuing a new one revokes the previous.
+_Avoid_: Review link, Public link, Invite, Reviewer token (the per-Reviewer secret of the Widget surface).
+
+**Poster**:
+The still frame of a **Video** shown in the Videos list and in the player before playback. Taken from the file once, at upload; a Video may have none.
+_Avoid_: Thumbnail, Cover, Preview.
 
 ### Identity & access
 
@@ -33,30 +77,93 @@ The per-Reviewer secret that authorizes reading and submitting Feedback. Created
 **Agent token**:
 The organization-scoped secret (`ff_agent_`) for the agent/MCP API. The only genuine secret credential in the system; stored hashed and revocable.
 
+### Account & billing
+
+**User**:
+A person with a Faster Fixes account who signs in to the dashboard. Distinct from a **Reviewer**, who has no account.
+_Avoid_: Account (a credential record of the sign-in subsystem), Customer.
+
+**Auth**:
+The sign-in subsystem: credentials, sessions, email verification, password reset, impersonation. Owns no business entity; it establishes which **User** is acting.
+_Avoid_: Login, Identity.
+
+**Organization**:
+The tenant. Owns Projects (and through them Videos), Installations, Agent tokens and the Subscription. Every User acts within one active Organization.
+_Avoid_: Team, Workspace, Company.
+
+**Member**:
+A User's belonging to an Organization, carrying a **Role**. One per (User × Organization).
+
+**Role**:
+A Member's permission level: `owner`, `admin`, `member`. Write "member role" in full when the role is meant; bare "Member" is the entity.
+
+**Invitation**:
+A pending offer for an email address to become a Member of an Organization, with a Role. Accepted or rejected by the recipient.
+
+**Subscription**:
+An Organization's billing relationship, mirrored from Stripe. At most one active per Organization. Belongs to the Organization, never to a User.
+
+**Plan**:
+The tier a Subscription grants (`free`, `pro`, `agency`), defining limits (projects, members, Videos) and feature access. An Organization without an active Subscription is on the free Plan; a self-hosted instance always resolves to the top Plan. Video limits (one Video on the free Plan, a storage budget and a maximum file size on every Plan) apply only on the cloud instance: a self-hosted instance has none. An Organization above a limit keeps what it has and cannot add more.
+
+**Paying organization**:
+An Organization whose Subscription is `active` or `past_due` in Stripe. Trialing, unpaid, paused and incomplete Subscriptions do not count. The unit for MRR, conversion and churn.
+_Avoid_: Customer, Subscriber, Paying user (billing belongs to the Organization, never to a User).
+
+**Engaged organization**:
+An Organization that received at least one Feedback in the last 30 days, meaning its Widget is installed and used by Reviewers. The unit for usage and adoption metrics.
+_Avoid_: Active organization (reserved for the Organization selected in a User's session), Active user.
+
+### Testimonials
+
+**Testimonial**:
+A quote a **User** gives about Faster Fixes on behalf of the **Organization** they belong to at that moment: a star rating, a text, and the identity it is signed with (name, title, organization, website, photo). The identity is a snapshot taken at submission, never a live reference to the User or Organization, so a published quote stays as the person validated it. Never published without review.
+_Avoid_: Review (a Reviewer is the widget's end-user), Feedback (reserved for the widget's reports), Quote.
+
+**Testimonial request**:
+The one-time invitation sent to a User to give a **Testimonial**, as a short email sequence. At most one per User, ever, and at most one per Organization. Ends when the User submits a Testimonial, declines, or the sequence runs out.
+_Avoid_: Campaign, Drip, Survey.
+
 ### Feedback lifecycle
 
 **Status**:
 The state of a Feedback. Canonical values: `new`, `in_progress`, `resolved`, `archived`.
 
 **Status actor**:
-Who or what drove a Status change: a dashboard user, a Tracker sync, or the **Agent** (an Agent-token caller). Travels on the status-change event so a **Notification channel** can distinguish an agent-resolved Feedback from a human-resolved one.
+Who or what drove a Status change: a **User**, a Tracker sync, or the **Agent** (an Agent-token caller). Travels on the status-change event so a **Notification channel** can distinguish an agent-resolved Feedback from a human-resolved one.
+
+**Rank**:
+A Feedback's place within its Status column of its Project's board, set by a User to say what the team handles first. Shared by every Member. A Feedback without a Rank sits above ranked ones, newest first, and a Status change clears it.
+_Avoid_: Priority (reserved for Tracker-side priority levels), Position, Order.
 
 **Archived**:
 A Feedback the team has decided not to act on (won't fix, duplicate, out of scope). Stored in the database as `status = "closed"` for legacy reasons; the literal will be renamed in a future migration. UI label is **Archived** everywhere (status dropdown, kanban action, archive view).
 _Avoid_: Closed, Dismissed, Rejected.
 
+**Restore**:
+Taking an **Archived** Feedback back into the inbox for triage. A restored Feedback is always `new`, whatever its Status was before it was archived: Restore means "look at this again", not "undo the archiving". It is a Status change like any other, so Trackers converge to it (the mirrored Issue reopens) and the Rank is cleared. Only an Archived Feedback can be restored; a Feedback another actor has already moved out of Archived is left untouched.
+_Avoid_: Unarchive, Reopen (reserved for the Tracker-side action on an Issue), Undo.
+
 ### Integrations
 
+**Integration**:
+An external system Faster Fixes connects to through an **Installation**. Comes in two categories: a **Tracker** (two-way mirror) or a **Notification channel** (one-way announce). Currently GitHub Issues, Linear, Jira, Trello and Slack.
+_Avoid_: Connector, Plugin, External system.
+
 **Tracker**:
-An external issue-tracking system Faster Fixes can mirror Feedback into. Currently GitHub Issues and Linear.
+A category of **Integration**: an external issue-tracking system Faster Fixes can mirror Feedback into, converging its state with the Feedback's. Currently GitHub Issues, Linear, Jira and Trello. The category is defined by the mirroring behaviour, not by the product type.
 _Avoid_: Integration target, Sink.
 
 **Notification channel**:
-A category of external connection where Faster Fixes *announces* Feedback one-way, holding no mirror and creating no Issue. First instance: Slack. Distinct from a **Tracker** (two-way, mirrors Feedback as an Issue and converges its state). Not to be confused with a Slack *channel* (the specific room a Project posts into).
+A category of **Integration** where Faster Fixes _announces_ Feedback one-way, holding no mirror and creating no Issue. First instance: Slack. Distinct from a **Tracker** (two-way, mirrors Feedback as an Issue and converges its state). Not to be confused with a Slack _channel_ (the specific room a Project posts into).
 _Avoid_: Webhook (implementation detail), Sink.
 
 **Installation**:
-The org-level connection to an external system — a **Tracker** (`GitHubInstallation`, `LinearInstallation`) or a **Notification channel** (`SlackInstallation`). One per (Organization × external system).
+The org-level connection to an **Integration** — a **Tracker** (`GitHubInstallation`, `LinearInstallation`, `JiraInstallation`, `TrelloInstallation`) or a **Notification channel** (`SlackInstallation`). One per (Organization × Integration).
+
+**Reconnect required**:
+The state of an **Installation** whose authorization the **Integration** has explicitly refused or revoked. Only a User re-authorizing the connection clears it. A transient failure of the Integration never puts an Installation in this state.
+_Avoid_: Disconnected (an Organization with no Installation at all), Broken, Expired.
 
 **Jira site**:
 The Jira Cloud instance an Organization connects to (e.g. `acme.atlassian.net`), identified by an Atlassian `cloudId`. The org-level scope of a Jira Installation — the analog of a Linear workspace or a GitHub account. One per Organization.
@@ -65,17 +172,28 @@ _Avoid_: Jira instance, Jira workspace.
 **Jira project**:
 A project inside a Jira site (e.g. `PAY`). The per-Project tracker scope a Faster Fixes Project links to — the analog of a GitHub repo or a Linear team. Always written "Jira project" in full; bare "project" means a Faster Fixes Project.
 
+**Trello board**:
+A board a Trello member can reach. The per-Project tracker scope a Faster Fixes Project links to, the analog of a GitHub repo, a Linear team or a Jira project. A Trello Installation is one Trello member's authorization and has no org-level scope of its own: there is no Trello analog of a **Jira site**. Always written "Trello board" in full; bare "board" means a Faster Fixes Project's board.
+_Avoid_: Trello workspace (not a scope Faster Fixes links to).
+
+**Trello card**:
+The **Issue** a Feedback is mirrored as in Trello. The domain keeps saying Issue and **Issue link**; "card" is the Trello-facing word, used in UI copy on Trello screens.
+
 **Project link**:
-The project-level binding from a Faster Fixes Project to an external scope — a Tracker scope (a GitHub repo, a Linear team) or a Notification channel destination (a Slack channel). One per (Project × external system).
+The project-level binding from a Faster Fixes Project to an external scope — a Tracker scope (a GitHub repo, a Linear team) or a Notification channel destination (a Slack channel). One per (Project × Integration).
 
 **Issue link**:
-The per-Feedback record connecting a single Feedback to its mirrored issue in a Tracker. A Feedback can have at most one issue link per Tracker, but may have one for GitHub *and* one for Linear simultaneously.
+The per-Feedback record connecting a single Feedback to its mirrored issue in a Tracker. A Feedback can have at most one issue link per Tracker, but may have one for each Tracker simultaneously.
+
+**Mirrored Status**:
+The Status an **Issue link** last converged on, together with the Issue's state at that moment. An Issue link whose Mirrored Status differs from its Feedback's Status, or has none yet, is _pending_: the Feedback wins until the Tracker has converged to it.
+_Avoid_: Synced status, Last sync source.
 
 ### Diagnostics
 
 **Diagnostic Trail**:
 The console and network history captured leading up to a Feedback submission, attached to that Feedback to aid reproduction.
-_Avoid_: Session, Logs, Recording (the Trail is a bounded snapshot, not a continuous session recording).
+_Avoid_: Session, Logs, Recording (the Recording replays the page; the Trail is the console and network history).
 
 **Console Entry**:
 One captured `console.*` call: level (`log`/`info`/`warn`/`error`/`debug`), message, timestamp. All levels captured.
@@ -86,14 +204,39 @@ One captured `fetch`/`XHR` call: method, URL, status, duration, timestamp. Metad
 **Ring Buffer**:
 The fixed-size in-memory store the Widget fills from page load; oldest entries drop when full. A Diagnostic Trail is a snapshot of this buffer at submission time.
 
+**Custom metadata**:
+Key/value pairs the customer's site declares in its Widget configuration and that travel with every Feedback submitted from it: a user ID in the customer's system, a release version, a tenant, a feature flag. Declared by the developer, never captured by the Widget; one flat set per Feedback, fixed at submission; shown to the team in the inbox, in mirrored Issues and on the agent surface, never to a Reviewer. Distinct from the **Diagnostic Trail** (what the Widget observed) and unaffected by turning capture off.
+_Avoid_: Metadata (the Widget's own element-context and pin-placement bag, which the Widget reads back), Tags, Context, Attributes, User properties.
+
 ## Relationships
 
+- An **Organization** has many **Members**, owns many **Projects**, and has zero or one active **Subscription**
+- A **User** may be a **Member** of several **Organizations**, with one **Role** in each
 - A **Feedback** has zero or one **Diagnostic Trail**
+- A **Feedback** has zero or one **Recording**, only when it is about a page; the Recording ends at the Feedback's **Selection** and complements it, never replaces it; two Feedbacks never share a Recording, though their Recordings may cover the same moments
+- A **Testimonial** is given by one **User** on behalf of one **Organization**; it is the outcome of at most one **Testimonial request**
+- A **Testimonial** is deleted with its **User**; it outlives its **Organization**, whose name it carries as a snapshot
+- A **Feedback** has zero or one set of **Custom metadata**, declared by the customer's site at submission; it is never returned to a **Reviewer**
+- A **Feedback** has exactly one **Selection** and zero or one **Screenshot**; a **Selection frame** exists only when the Feedback has the Selection's geometry and a Screenshot or a Recording to draw it on
+- A **Feedback** belongs to one **Project** and is about either a page of its website or one of its **Videos**, never both; its **Selection** takes the shape of that subject
+- A **Project** holds many **Videos**; a **Video** belongs to exactly one **Project** and is deleted with it
+- A **Video** has zero or one **Poster**
+- A **Video** has exactly one **Share link** at a time; a **Reviewer** who gives Feedback on a Video does so through that link
+- A **Reviewer** belongs to exactly one **Project**; a Reviewer who came through a **Share link** is also bound to that **Video**, where their name is unique
+- A **Tracker** mirrors and a **Notification channel** announces every Feedback of a **Project** through its **Project links**, page and video alike
+- A video Feedback's **Screenshot** is the frame captured at its **Selection**
+- A **Pin** marks a Feedback on the live page; a **Selection frame** marks the same Selection on its Screenshot and at the end of its Recording
+- A **Feedback** has zero or one **Rank**, valid only within its current **Status**; the Rank is internal to the team and never shown to a **Reviewer**
 - A **Diagnostic Trail** contains many **Console Entries** and many **Network Entries**
 - The **Widget** maintains one **Ring Buffer** per page session; submitting Feedback snapshots it into a **Diagnostic Trail**
-- A **Project** has zero or one **Project link** per **Tracker** (GitHub, Linear)
+- A page session starts at a full page load and at a return to the page through the browser's back or forward; a change of route without a load continues it. A **Recording** and a **Diagnostic Trail** never reach back before the start of their page session
+- An **Integration** is either a **Tracker** or a **Notification channel**
+- A **Project** has zero or one **Project link** per **Integration**
 - A **Feedback** has zero or one **Issue link** per **Tracker**
-- A **Reviewer** submits **Feedback** through the widget; Reviewers are not authenticated app users
+- An Issue's state _mirrors_ a **Status** when the Tracker would accept it for that Status; one state may mirror several (a Jira issue in Done mirrors Resolved and Archived)
+- A **Tracker** sets a Feedback's **Status** only when its **Issue link** is not pending and the Issue's state has changed since its **Mirrored Status** into one that does not mirror the current Status; an edit that leaves the state as it was (a comment, an assignee) never moves the Feedback
+- A **Reviewer** submits **Feedback** through the **Widget**; Reviewers are not authenticated app users
+- A **Widget** is installed through exactly one **Embed**; Embeds differ in install mechanism only, never in behaviour or customization
 - An **Installation** is owned by an Organization and shared across all Projects in that Organization
 - The same **Feedback** may exist as a GitHub Issue and a Linear Issue at the same time; both are mirrors of the Feedback, not peers of each other
 - A **Notification channel** (Slack) receives one-way announcements of a Feedback; unlike a **Tracker** it holds no mirror, has no **Issue link**, and never feeds state back to the Feedback
@@ -111,4 +254,6 @@ The fixed-size in-memory store the Widget fills from page load; oldest entries d
 - **"Closed" vs "Archived"** — historically used interchangeably. Resolved: the canonical user-facing term is **Archived**. The DB literal `"closed"` is retained for now to avoid a migration; rename is deferred.
 - **"Issue"** — refers exclusively to a tracker-side artifact (GitHub Issue, Linear Issue). Internal app records are **Feedback**, never "issues".
 - **"logs"** — used loosely for the captured browser data. Resolved: the canonical term is **Diagnostic Trail** (console + network), distinct from server-side logs.
+- **"Integration" vs "external system"**: the glossary said "external system" while the UI and the team said "integration". Resolved: **Integration** is the canonical umbrella term; **Tracker** and **Notification channel** are its two categories, and **Installation** and **Project link** apply to both.
+- **"metadata"** — the Widget's HTTP payload and `Feedback` record carry a `metadata` bag holding the element context and pin placement the Widget itself writes and reads back, and the API reference once labelled it "Custom metadata". Resolved: that bag has no domain name and is widget-internal; the developer-declared pairs are **Custom metadata**, a separate concept with its own field, and the bare word "metadata" is not used for them.
 - **"API key"** — the widget historically embedded an `apiKey` stored like a secret (SHA-256 hash, last-4 shown, "regenerate" flow). Resolved: the widget surface has **no secret**. It embeds the public **Project public ID**, secured by the **allowed origins** (domain + subdomains) + **Reviewer token**. Genuine secrets exist only on the agent surface (**Agent token**). The widget `apiKey` is being removed.

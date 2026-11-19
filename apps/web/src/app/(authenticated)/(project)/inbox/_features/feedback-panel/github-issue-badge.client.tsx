@@ -27,12 +27,18 @@ export function GitHubIssueBadge({
   const queryClient = useQueryClient();
 
   const createIssueMutation = useMutation(
-    trpc.authenticated.projects.feedback.createIssue.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey:
-            trpc.authenticated.projects.feedback.list.queryKey({ projectId }),
-        });
+    trpc.authenticated.projects.feedback.createGitHubIssue.mutationOptions({
+      onSuccess: async () => {
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: trpc.authenticated.projects.feedback.list.queryKey({
+              projectId,
+            }),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: trpc.authenticated.projects.video.get.pathKey(),
+          }),
+        ]);
         toast.success("GitHub issue creation queued.");
       },
       onError: (error) => toast.error(error.message),
@@ -45,13 +51,11 @@ export function GitHubIssueBadge({
         href={issueLink.issueUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <GithubIcon className="size-3.5" />
         <span>#{issueLink.issueNumber}</span>
-        <span className="text-xs">
-          ({issueLink.issueState})
-        </span>
+        <span className="text-xs">({issueLink.issueState})</span>
       </a>
     );
   }

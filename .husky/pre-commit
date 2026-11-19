@@ -1,0 +1,12 @@
+set -e
+
+# Without set -e the hook exit code would be `pnpm test` alone, so a lint-staged
+# failure would not block the commit.
+pnpm exec lint-staged
+pnpm typecheck
+pnpm test
+
+# Knip resolves the `@collections/*` alias to the untracked `.source` folder fumadocs
+# generates; without it every blog and docs MDX file reads as unused.
+pnpm --filter web exec fumadocs-mdx
+pnpm knip

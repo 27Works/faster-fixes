@@ -1,0 +1,81 @@
+{
+  "name": "@fasterfixes/vue",
+  "version": "1.0.1",
+  "description": "Vue plugin for the FasterFixes feedback widget. Reviewers annotate elements and submit visual feedback on your Vue or Nuxt app.",
+  "type": "module",
+  "license": "MIT",
+  "author": "FasterFixes <support@faster-fixes.com> (https://faster-fixes.com)",
+  "homepage": "https://faster-fixes.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manucoffin/faster-fixes.git",
+    "directory": "packages/widget-vue"
+  },
+  "bugs": {
+    "url": "https://github.com/manucoffin/faster-fixes/issues"
+  },
+  "keywords": [
+    "vue",
+    "nuxt",
+    "feedback",
+    "widget",
+    "bug-reporting",
+    "visual-feedback",
+    "annotation",
+    "screenshot",
+    "user-feedback",
+    "qa",
+    "vue-plugin"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@fasterfixes/widget": "workspace:^"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^2.5.1",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^9.39.1",
+    "jsdom": "^30.1.1",
+    "tsdown": "^0.21.4",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1",
+    "vue": "^3.5.0"
+  }
+}

@@ -1,0 +1,60 @@
+---
+title: Vue
+description: Install and configure the Faster Fixes widget in your Vue or Nuxt application.
+---
+
+## Installation
+
+```package-install
+@fasterfixes/vue
+```
+
+Requires Vue 3.5 or later.
+
+## Setup
+
+Install the plugin in your entry file:
+
+```ts title="src/main.ts"
+import { createFasterFixes } from "@fasterfixes/vue";
+import { createApp } from "vue";
+import App from "./App.vue";
+import { router } from "./router";
+
+createApp(App)
+  .use(router)
+  .use(createFasterFixes({ projectId: "proj_your_project_id" }))
+  .mount("#app");
+```
+
+Get your Project ID in [Project Settings](https://faster-fixes.com/settings). The widget only shows for Reviewers who opened your site through their review link. See [Reviewer Tokens](/docs/concepts/reviewer-tokens).
+
+### Nuxt
+
+Add a plugin:
+
+```ts title="plugins/faster-fixes.ts"
+import { createFasterFixes } from "@fasterfixes/vue";
+
+export default defineNuxtPlugin((nuxtApp) => {
+  nuxtApp.vueApp.use(createFasterFixes({ projectId: "proj_your_project_id" }));
+});
+```
+
+## Options
+
+| Option               | Type                                       | Required | Description                                                                                                                       |
+| -------------------- | ------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `projectId`          | `string`                                   | Yes      | Your Faster Fixes Project ID                                                                                                      |
+| `apiOrigin`          | `string`                                   | No       | API base URL. Defaults to `https://www.faster-fixes.com`                                                                          |
+| `color`              | `string`                                   | No       | Accent color. Any CSS color value. Defaults to `#02527E`                                                                          |
+| `position`           | `WidgetPosition`                           | No       | Floating button placement. Defaults to `bottom-right`. See [Position](/docs/widget/customization#position).                       |
+| `labels`             | `Partial<Labels>`                          | No       | Replaces any visible or announced string. See [Labels](/docs/widget/customization#labels).                                        |
+| `captureDiagnostics` | `boolean`                                  | No       | Records the console and network history leading to a report. Defaults to `true`                                                   |
+| `captureRecording`   | `boolean`                                  | No       | Keeps a Recording of the last minute on the page with each Feedback. Defaults to `true`. See [Recording](/docs/widget/recording). |
+| `customMetadata`     | `CustomMetadata \| (() => CustomMetadata)` | No       | Key/value pairs sent with every Feedback, such as a user ID. See [Custom metadata](/docs/widget/custom-metadata).                 |
+
+## Next steps
+
+- Build your own trigger or read the widget state in [Control the Widget](/docs/widget/control-the-widget).
+- Theme the widget and replace its strings in [Customization](/docs/widget/customization).

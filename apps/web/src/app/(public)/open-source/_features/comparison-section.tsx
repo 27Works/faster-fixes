@@ -1,4 +1,12 @@
+import { COMPETITOR_PRICES } from "@/app/(public)/_helpers/competitor-prices";
+import {
+  EXCHANGE_RATE_NOTE,
+  formatPrice,
+  formatPublishedPrice,
+} from "@/app/(public)/_helpers/format-competitor-price";
 import { CheckIcon, XIcon } from "lucide-react";
+
+const { bugherd, markerIo, usersnap } = COMPETITOR_PRICES;
 
 type Cell = string | { type: "yes" | "no"; note?: string };
 
@@ -14,12 +22,7 @@ const rows: { label: string; cells: [Cell, Cell, Cell, Cell] }[] = [
   },
   {
     label: "Self-hostable",
-    cells: [
-      { type: "yes" },
-      { type: "no" },
-      { type: "no" },
-      { type: "no" },
-    ],
+    cells: [{ type: "yes" }, { type: "no" }, { type: "no" }, { type: "no" }],
   },
   {
     label: "AI coding agent (MCP)",
@@ -27,26 +30,21 @@ const rows: { label: string; cells: [Cell, Cell, Cell, Cell] }[] = [
       { type: "yes", note: "Claude Code, Cursor, Windsurf" },
       { type: "no" },
       { type: "no" },
-      { type: "no" },
+      { type: "yes", note: "Feedback search · cannot edit feedback" },
     ],
   },
   {
     label: "Pricing model",
     cells: [
       "Free self-hosted · flat hosted plan",
-      "~$49/user/month",
-      "~$59/user/month",
-      "Tiered per-seat",
+      `${formatPublishedPrice(bugherd.plans.standard, "/mo")} for ${bugherd.plans.standard.seats} members, ${formatPrice(bugherd.otherPrices.extraSeat)} per extra seat`,
+      `${formatPublishedPrice(markerIo.plans.starter, "/mo")} ${markerIo.plans.starter.name} for ${markerIo.plans.starter.seats} seats`,
+      `${formatPublishedPrice(usersnap.plans.starter, "/mo")} ${usersnap.plans.starter.name} for ${usersnap.plans.starter.seats} seats, then unlimited seats`,
     ],
   },
   {
     label: "Non-technical client widget",
-    cells: [
-      { type: "yes" },
-      { type: "yes" },
-      { type: "yes" },
-      { type: "yes" },
-    ],
+    cells: [{ type: "yes" }, { type: "yes" }, { type: "yes" }, { type: "yes" }],
   },
   {
     label: "Auto context capture",
@@ -54,7 +52,7 @@ const rows: { label: string; cells: [Cell, Cell, Cell, Cell] }[] = [
       "Screenshot, URL, DOM selector, React tree, browser",
       "Screenshot, annotations",
       "Screenshot, annotations",
-      "Screenshot, annotations",
+      "Screenshot, video, URL, browser, console logs",
     ],
   },
 ];
@@ -63,17 +61,17 @@ const headers = ["FasterFixes", "BugHerd", "Marker.io", "Usersnap"] as const;
 
 function renderCell(cell: Cell) {
   if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
+    return <span className="text-sm text-muted-foreground">{cell}</span>;
   }
   return (
     <div className="flex flex-col gap-1">
       {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
+        <CheckIcon className="size-5 text-success" aria-label="Yes" />
       ) : (
-        <XIcon className="text-destructive size-5" aria-label="No" />
+        <XIcon className="size-5 text-destructive" aria-label="No" />
       )}
       {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
+        <span className="text-xs text-muted-foreground">{cell.note}</span>
       )}
     </div>
   );
@@ -81,16 +79,16 @@ function renderCell(cell: Cell) {
 
 export function ComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
+    <section className="w-full border-y bg-muted/30 py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Compare
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
             How FasterFixes compares
           </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
+          <p className="mt-4 text-lg text-muted-foreground">
             FasterFixes vs. the closed-source incumbents in the client-feedback
             space.
           </p>
@@ -136,9 +134,9 @@ export function ComparisonSection() {
           </table>
         </div>
 
-        <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-center text-sm">
+        <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted-foreground">
           Pricing as publicly listed at time of writing. Check each vendor for
-          current plans.
+          current plans. {EXCHANGE_RATE_NOTE}
         </p>
       </div>
     </section>

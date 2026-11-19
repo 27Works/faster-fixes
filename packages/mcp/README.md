@@ -154,21 +154,68 @@ After configuring, ask your agent:
 
 - "Check for new feedback"
 - "Get all open feedback and fix them"
+- "Show me everything about feedback abc123"
 - "Mark feedback abc123 as resolved"
 
 Or set up a scheduled task to fetch and fix feedback automatically.
+
+### Example session: feedback on a video
+
+1. "Which videos have open feedback?" The agent calls `list_videos` and finds "Homepage walkthrough v1" with id `d4f0a2c1-…`.
+2. "List the feedback on that video." The agent calls `list_feedbacks` with `video_id: "d4f0a2c1-…"`. Each item names the time ("At 00:12.340") and the position on the frame ("Point at 42%, 61%").
+3. "Mark the logo comment as in progress." The agent calls `update_feedback_status` with the Feedback id and `status: "in_progress"`.
 
 ## Tools
 
 ### `list_feedbacks`
 
-List feedback items for your project. Returns page URL, CSS selector, click coordinates, component tree, browser info, and screenshot.
+List feedback items for your project. Returns page URL, CSS selector, click coordinates, component tree, browser info, and screenshot. Feedback left on a video carries a `videoId` and a `selection` instead of the page fields: `startMs`, `endMs` (null for an instant), and a `point` or `area` in normalized 0..1 frame coordinates (both null when the reviewer marked time only).
 
-| Parameter  | Type   | Required | Description                                        |
-| ---------- | ------ | -------- | -------------------------------------------------- |
-| `status`   | string | No       | Filter: `new`, `in_progress`, `resolved`, `closed` |
-| `page_url` | string | No       | Filter by the page where feedback was left         |
-| `format`   | string | No       | `markdown` (default) or `json`                     |
+| Parameter  | Type   | Required | Description                                                                  |
+| ---------- | ------ | -------- | ---------------------------------------------------------------------------- |
+| `status`   | string | No       | Filter: `new`, `in_progress`, `resolved`, `closed`                           |
+| `page_url` | string | No       | Filter by the page where feedback was left                                   |
+| `video_id` | string | No       | Filter by a video id from `list_videos`. Cannot be combined with `page_url`. |
+| `format`   | string | No       | `markdown` (default) or `json`                                               |
+
+With `video_id` and `format: json`, the response opens with a `video` block (`id`, `title`, `filename`, `durationMs`, `width`, `height`) so normalized coordinates can be converted to pixels. Screenshot URLs expire after one hour.
+
+A feedback item with a [Recording](https://faster-fixes.com/docs/widget/recording) carries one Recording line with its duration and, once `get_feedback` has read it, its number of steps. The listing never carries the timeline.
+
+### `get_feedback`
+
+Get one feedback item in full: its markdown and its screenshot as an image. When the item has a Recording, a Timeline section takes the place of Diagnostics: what the reviewer did before submitting (clicks, typing, navigations, scrolling), merged in time order with the console logs and network requests, ending with the selected element. Typed values are never captured.
+
+| Parameter     | Type   | Required | Description                           |
+| ------------- | ------ | -------- | ------------------------------------- |
+| `feedback_id` | string | Yes      | The feedback ID from `list_feedbacks` |
+
+When the screenshot cannot be downloaded or is larger than 3 MB, only the markdown is returned, with the screenshot's link.
+
+### `list_videos`
+
+List the project's videos that are ready for review, newest first. Takes no parameters: the project comes from `FASTER_FIXES_PROJECT`. Returns JSON:
+
+```json
+{
+  "videos": [
+    {
+      "id": "d4f0a2c1-7e3b-4b7a-9a1e-2c5f8e9d1b23",
+      "title": "Homepage walkthrough v1",
+      "filename": "homepage-walkthrough.mp4",
+      "durationMs": 94200,
+      "width": 1920,
+      "height": 1080,
+      "annotationsOpen": true,
+      "openFeedbackCount": 2,
+      "createdAt": "2026-11-04T09:00:00.000Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+The video file itself is never returned.
 
 ### `update_feedback_status`
 
@@ -183,36 +230,36 @@ Update the status of a feedback item.
 
 Create one or many feedback items. Designed for migrating from BugHerd, Marker.io, Userback, Usersnap, and similar tools — feed the agent a CSV or JSON export and it will populate Faster Fixes. The batch is atomic, and integrations (e.g. GitHub issue creation) are intentionally skipped so an import does not fan out into hundreds of issues.
 
-| Parameter       | Type   | Required | Description                                                                                |
-| --------------- | ------ | -------- | ------------------------------------------------------------------------------------------ |
-| `feedbacks`     | array  | Yes      | Up to 100 feedback items per call. See item shape below.                                   |
+| Parameter       | Type   | Required | Description                                                                                         |
+| --------------- | ------ | -------- | --------------------------------------------------------------------------------------------------- |
+| `feedbacks`     | array  | Yes      | Up to 100 feedback items per call. See item shape below.                                            |
 | `reviewer_name` | string | No       | Name of the reviewer to attribute imports to. Reused if it exists. Defaults to "Imported feedback". |
-| `source`        | string | No       | Origin tool tag (e.g. `bugherd`, `marker.io`). Stamped into each item's metadata.          |
+| `source`        | string | No       | Origin tool tag (e.g. `bugherd`, `marker.io`). Stamped into each item's metadata.                   |
 
 Each feedback item:
 
-| Field            | Type   | Required | Description                                                          |
-| ---------------- | ------ | -------- | -------------------------------------------------------------------- |
-| `comment`        | string | Yes      | Bug description / feedback text.                                     |
-| `pageUrl`        | string | Yes      | Page URL where the feedback was originally left.                     |
-| `status`         | string | No       | `new` (default), `in_progress`, `resolved`, or `closed`.             |
-| `selector`       | string | No       | CSS selector of the targeted element.                                |
-| `clickX`         | number | No       | Click X coordinate (px).                                             |
-| `clickY`         | number | No       | Click Y coordinate (px).                                             |
-| `browserName`    | string | No       | Browser name from the original report.                               |
-| `browserVersion` | string | No       | Browser version.                                                     |
-| `os`             | string | No       | Operating system.                                                    |
-| `viewportWidth`  | number | No       | Viewport width (px).                                                 |
-| `viewportHeight` | number | No       | Viewport height (px).                                                |
+| Field            | Type   | Required | Description                                                              |
+| ---------------- | ------ | -------- | ------------------------------------------------------------------------ |
+| `comment`        | string | Yes      | Bug description / feedback text.                                         |
+| `pageUrl`        | string | Yes      | Page URL where the feedback was originally left.                         |
+| `status`         | string | No       | `new` (default), `in_progress`, `resolved`, or `closed`.                 |
+| `selector`       | string | No       | CSS selector of the targeted element.                                    |
+| `clickX`         | number | No       | Click X coordinate (px).                                                 |
+| `clickY`         | number | No       | Click Y coordinate (px).                                                 |
+| `browserName`    | string | No       | Browser name from the original report.                                   |
+| `browserVersion` | string | No       | Browser version.                                                         |
+| `os`             | string | No       | Operating system.                                                        |
+| `viewportWidth`  | number | No       | Viewport width (px).                                                     |
+| `viewportHeight` | number | No       | Viewport height (px).                                                    |
 | `createdAt`      | string | No       | ISO 8601 timestamp. Preserves the original report date during migration. |
-| `metadata`       | object | No       | Arbitrary key/value pairs (e.g. `{ "originalId": "bh-12345" }`).     |
+| `metadata`       | object | No       | Arbitrary key/value pairs (e.g. `{ "originalId": "bh-12345" }`).         |
 
 ## Environment variables
 
-| Variable               | Required | Description                                           |
-| ---------------------- | -------- | ----------------------------------------------------- |
-| `FASTER_FIXES_TOKEN`   | Yes      | Agent token from Organization Settings                |
-| `FASTER_FIXES_PROJECT` | Yes      | Project ID (`proj_...`) from Project Settings         |
+| Variable               | Required | Description                                               |
+| ---------------------- | -------- | --------------------------------------------------------- |
+| `FASTER_FIXES_TOKEN`   | Yes      | Agent token from Organization Settings                    |
+| `FASTER_FIXES_PROJECT` | Yes      | Project ID (`proj_...`) from Project Settings             |
 | `FASTER_FIXES_URL`     | No       | API base URL (defaults to `https://www.faster-fixes.com`) |
 
 ## Security

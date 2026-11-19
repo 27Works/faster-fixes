@@ -1,9 +1,26 @@
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import {
+  formatAmount,
+  formatPrice,
+} from "../../../_helpers/format-competitor-price";
+
+const atarimPro = COMPETITOR_PRICES.atarim.plans.pro;
+const atarimProBilledYearly = formatAmount(
+  atarimPro.billedYearlyAmount,
+  atarimPro.currency,
+);
+const atarimProYearlyTotal = formatAmount(
+  Math.round(atarimPro.billedYearlyAmount * 12 * 100) / 100,
+  atarimPro.currency,
+);
+const aiCredits = COMPETITOR_PRICES.atarim.otherPrices.aiCreditsPerThousand;
+
 export function AtarimWhatIsSection() {
   return (
     <section className="w-full py-16 md:py-20">
       <div className="container mx-auto max-w-3xl px-4">
         <div className="text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Background
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">What is Atarim?</h2>
@@ -13,25 +30,33 @@ export function AtarimWhatIsSection() {
           <p>
             Atarim (formerly WP Feedback) was founded in 2019 by Vito Peleg in
             London. It is a cloud-based visual collaboration platform used by
-            72,000+ teams and 1.7 million users — primarily web design
-            agencies, freelancers, and WordPress professionals managing client
-            review cycles.
+            72,000+ teams and 1.7 million users, primarily web design agencies,
+            freelancers, and WordPress professionals managing client review
+            cycles.
           </p>
           <p>
             The platform centers on point-and-click visual feedback on live
-            websites, with a suite of six AI agents called InnerCircle — Pixel
-            (design), Claro (copy), Lexi (SEO), Index (UX), Navi (clarity),
-            and Glitch (QA) — built into the dashboard. It supports client
-            portals with guest access, whitelabeling, and integrations with
-            Jira, Asana, ClickUp, Monday.com, Slack, Trello, Basecamp,
-            Teamwork, Figma, Zapier, and more.
+            websites, with a suite of six AI agents called InnerCircle built
+            into the dashboard: Claro (project management), Pixel (design), Lexi
+            (content), Index (SEO and performance), Navi (UX and accessibility),
+            and Glitch (functionality). It supports client portals with guest
+            access, whitelabeling, integrations with Jira, Asana, ClickUp,
+            Monday.com, Slack, Trello, Basecamp, Teamwork, Figma, Zapier, and
+            more, and a free MCP server that connects Claude, Codex, and other
+            AI clients to Atarim tasks and sites.
           </p>
           <p>
-            Atarim is proprietary, cloud-only, and priced per seat. There is
-            no self-hosting option and no public source code. The Pro plan
-            starts at $25/seat/month (billed yearly), which means a 5-person
-            team pays $125/month — $1,500/year — before hitting the 5-seat
-            cap and upgrading to Business at $35/seat/month.
+            Atarim is proprietary and cloud-only. There is no self-hosting
+            option and no public source code. It sells one paid plan:{" "}
+            {atarimPro.name} at {formatPrice(atarimPro)}/month, or{" "}
+            {atarimProBilledYearly}/month billed yearly ({atarimProYearlyTotal}
+            /year), for up to {atarimPro.seats} seats and{" "}
+            {atarimPro.projects.toLocaleString("en-US")} projects, with 5,000 AI
+            credits a month. Extra credits cost{" "}
+            {formatAmount(aiCredits.amount, aiCredits.currency)} to{" "}
+            {formatAmount(aiCredits.maxAmount, aiCredits.currency)} per 1,000.
+            The free plan covers 1 project with 200 credits, one time, and
+            Enterprise is priced on request.
           </p>
         </div>
       </div>

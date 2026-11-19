@@ -1,0 +1,12 @@
+{
+  "title": "Install",
+  "defaultOpen": true,
+  "pages": [
+    "react",
+    "vue",
+    "angular",
+    "svelte",
+    "script-embed",
+    "other-frameworks"
+  ]
+}

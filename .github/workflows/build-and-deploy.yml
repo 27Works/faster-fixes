@@ -5,8 +5,16 @@
 # Repo -> Settings -> Secrets and variables -> Actions:
 #   Secrets:   DATABASE_URL (Supabase session-pooler URL), COOLIFY_WEBHOOK_URL,
 #              COOLIFY_TOKEN
-#   Variables: NEXT_PUBLIC_FF_API_ORIGIN, NEXT_PUBLIC_STORAGE_BASE_URL
-#              (public, non-secret — baked into the image at build)
+#   Variables: BASE_URL, NEXT_PUBLIC_FF_API_ORIGIN, NEXT_PUBLIC_STORAGE_BASE_URL,
+#              NEXT_PUBLIC_GITHUB_APP_NAME, STORAGE_BUCKET_NAME
+#              (non-secret — baked into the image at build, see the Dockerfile)
+#
+# The image is built from upstream's Dockerfile, whose start command also runs
+# `prisma migrate deploy` before `next start`. The migrate step below still
+# runs first so a failing migration stops the deploy before Coolify restarts
+# the app; the second run at start-up is then a no-op. Coolify's runtime
+# DATABASE_URL must be able to run migrations (Supabase session pooler or a
+# direct connection, not the transaction pooler), or the container won't start.
 
 name: build-and-deploy
 
@@ -54,10 +62,12 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
+            BASE_URL=${{ vars.BASE_URL }}
             NEXT_PUBLIC_FF_API_ORIGIN=${{ vars.NEXT_PUBLIC_FF_API_ORIGIN }}
             NEXT_PUBLIC_IS_CLOUD=false
             NEXT_PUBLIC_STORAGE_BASE_URL=${{ vars.NEXT_PUBLIC_STORAGE_BASE_URL }}
             NEXT_PUBLIC_GITHUB_APP_NAME=${{ vars.NEXT_PUBLIC_GITHUB_APP_NAME }}
+            STORAGE_BUCKET_NAME=${{ vars.STORAGE_BUCKET_NAME }}
 
       # Migrate the remote Supabase DB from CI — nothing DB-related runs on the server.
       - uses: pnpm/action-setup@v4

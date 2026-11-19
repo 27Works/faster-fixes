@@ -1,0 +1,86 @@
+{
+  "name": "@fasterfixes/angular",
+  "version": "1.0.1",
+  "description": "Angular provider for the FasterFixes feedback widget. Reviewers annotate elements and submit visual feedback on your Angular or Analog app.",
+  "type": "module",
+  "license": "MIT",
+  "author": "FasterFixes <support@faster-fixes.com> (https://faster-fixes.com)",
+  "homepage": "https://faster-fixes.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manucoffin/faster-fixes.git",
+    "directory": "packages/widget-angular"
+  },
+  "bugs": {
+    "url": "https://github.com/manucoffin/faster-fixes/issues"
+  },
+  "keywords": [
+    "angular",
+    "analog",
+    "angular-ssr",
+    "feedback",
+    "widget",
+    "bug-reporting",
+    "visual-feedback",
+    "annotation",
+    "screenshot",
+    "user-feedback",
+    "qa",
+    "signals"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "LICENSE",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@fasterfixes/widget": "workspace:^"
+  },
+  "peerDependencies": {
+    "@angular/common": ">=19.0.0",
+    "@angular/core": ">=19.0.0"
+  },
+  "devDependencies": {
+    "@angular/common": "^22.2.0",
+    "@angular/compiler": "^22.2.0",
+    "@angular/core": "^22.2.0",
+    "@angular/platform-browser": "^22.2.0",
+    "@angular/platform-server": "^22.2.0",
+    "@workspace/eslint-config": "workspace:*",
+    "@workspace/typescript-config": "workspace:*",
+    "eslint": "^9.39.1",
+    "jsdom": "^30.1.1",
+    "tsdown": "^0.21.4",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  }
+}

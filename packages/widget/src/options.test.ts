@@ -1,0 +1,176 @@
+import {
+  DEFAULT_API_ORIGIN,
+  DEFAULT_LABELS,
+  DEFAULT_WIDGET_COLOR,
+  DEFAULT_WIDGET_POSITION,
+} from "@fasterfixes/core";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { validateDisplayOptions, validateOptions } from "./options.js";
+
+describe("validateOptions", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("fills every omitted option with the default from core", () => {
+    expect(validateOptions({ projectId: "proj_abc" })).toEqual({
+      valid: true,
+      options: {
+        projectId: "proj_abc",
+        apiOrigin: DEFAULT_API_ORIGIN,
+        color: DEFAULT_WIDGET_COLOR,
+        position: DEFAULT_WIDGET_POSITION,
+        labels: DEFAULT_LABELS,
+        captureDiagnostics: true,
+        captureRecording: true,
+      },
+    });
+  });
+
+  it("keeps the options it is given", () => {
+    const result = validateOptions({
+      projectId: "proj_abc",
+      apiOrigin: "http://localhost:3000",
+      color: "#ff0000",
+      position: "top-left",
+      labels: { submitButton: "Send" },
+      captureDiagnostics: false,
+      captureRecording: false,
+    });
+
+    expect(result.valid && result.options).toMatchObject({
+      apiOrigin: "http://localhost:3000",
+      color: "#ff0000",
+      position: "top-left",
+      labels: { submitButton: "Send" },
+      captureDiagnostics: false,
+      captureRecording: false,
+    });
+  });
+
+  it.each([
+    [{ captureRecording: false }, { captureDiagnostics: true }],
+    [{ captureDiagnostics: false }, { captureRecording: true }],
+  ])("keeps the two capture switches independent: %j", (input, expected) => {
+    const result = validateOptions({ projectId: "proj_abc", ...input });
+
+    expect(result.valid && result.options).toMatchObject(expected);
+  });
+
+  it("handles an invalid captureRecording like captureDiagnostics", () => {
+    const result = validateOptions({
+      projectId: "proj_abc",
+      captureDiagnostics: "no",
+      captureRecording: "no",
+    });
+
+    expect(result.valid).toBe(true);
+    expect(result.valid && result.options.captureRecording).toBe(
+      result.valid && result.options.captureDiagnostics,
+    );
+  });
+
+  it.each([
+    ["projectId", { projectId: 42 }],
+    ["projectId", { projectId: "  " }],
+    ["projectId", {}],
+    ["position", { projectId: "proj_abc", position: "center" }],
+    ["labels", { projectId: "proj_abc", labels: "Send" }],
+    ["labels", { projectId: "proj_abc", labels: null }],
+    ["labels", { projectId: "proj_abc", labels: ["Send"] }],
+    ["customMetadata", { projectId: "proj_abc", customMetadata: "user_42" }],
+    ["customMetadata", { projectId: "proj_abc", customMetadata: 42 }],
+    ["customMetadata", { projectId: "proj_abc", customMetadata: null }],
+  ])("rejects an invalid %s", (option, input) => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(validateOptions(input)).toMatchObject({ valid: false, option });
+  });
+
+  it.each([
+    ["an object", { release: "1.4.0" }],
+    ["a function", () => ({ userId: "user_42" })],
+  ])("accepts customMetadata as %s", (_, customMetadata) => {
+    const result = validateOptions({ projectId: "proj_abc", customMetadata });
+
+    expect(result.valid && result.options.customMetadata).toBe(customMetadata);
+  });
+
+  it("names customMetadata in the development error", () => {
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    validateOptions({ projectId: "proj_abc", customMetadata: "user_42" });
+
+    expect(error).toHaveBeenCalledOnce();
+    expect(error.mock.calls[0]?.[0]).toContain("`customMetadata`");
+  });
+
+  it("rejects input that is not an object", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(validateOptions(undefined)).toMatchObject({
+      valid: false,
+      option: "projectId",
+    });
+  });
+
+  it("names the failing option in a console error in development", () => {
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    validateOptions({ projectId: "proj_abc", position: "center" });
+
+    expect(error).toHaveBeenCalledOnce();
+    expect(error.mock.calls[0]?.[0]).toContain("`position`");
+  });
+
+  it("stays silent in production but still rejects", () => {
+    vi.stubEnv("NODE_ENV", "production");
+    const error = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    expect(validateOptions({ projectId: 42 })).toMatchObject({ valid: false });
+    expect(error).not.toHaveBeenCalled();
+  });
+});
+
+describe("validateDisplayOptions", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("needs no projectId and fills the defaults", () => {
+    expect(validateDisplayOptions({})).toEqual({
+      valid: true,
+      options: {
+        apiOrigin: DEFAULT_API_ORIGIN,
+        color: DEFAULT_WIDGET_COLOR,
+        position: DEFAULT_WIDGET_POSITION,
+        labels: DEFAULT_LABELS,
+        captureDiagnostics: true,
+        captureRecording: true,
+      },
+    });
+  });
+
+  it("ignores keys outside the option object", () => {
+    const result = validateDisplayOptions({ client: {}, position: "top-left" });
+
+    expect(result.valid && result.options).not.toHaveProperty("client");
+  });
+
+  it("rejects an invalid position", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(validateDisplayOptions({ position: "center" })).toMatchObject({
+      valid: false,
+      option: "position",
+    });
+  });
+});

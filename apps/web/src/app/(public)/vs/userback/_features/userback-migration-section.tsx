@@ -1,7 +1,11 @@
-export const migrationSteps = [
+import { WidgetSwapAnimation } from "../../_components/illustrations/widget-swap-animation";
+import { VsSection } from "../../_features/vs-section";
+import { type VsStep, VsSteps } from "../../_features/vs-steps";
+
+export const migrationSteps: VsStep[] = [
   {
     label: "Export your feedback data from Userback",
-    body: "Download your feedback items from Userback via Settings > Export. CSV export is available on all plans. Note: video recordings, session replays, and survey responses do not have an equivalent in FasterFixes and will not carry over.",
+    body: "Download your feedback items from Userback via Settings > Export. CSV export is available on all plans. Note: screen recordings and survey responses have no equivalent in FasterFixes, and session replays will not carry over: a Recording is captured with each new feedback.",
   },
   {
     label: "Deploy FasterFixes",
@@ -9,7 +13,7 @@ export const migrationSteps = [
   },
   {
     label: "Replace the Userback widget",
-    body: "Remove the Userback script from your codebase. Install the FasterFixes React widget (npm install @fasterfixes/react) and drop the component into your layout, or use the HTML embed for non-React pages. Generate a shareable link for each client — no client account required.",
+    body: "Remove the Userback script from your codebase. Add the FasterFixes script tag to your site, or in a React app install @fasterfixes/react and wrap the app in FeedbackProvider. Generate a shareable link for each client, no client account required.",
   },
   {
     label: "Invite your team and connect your issue tracker",
@@ -19,40 +23,21 @@ export const migrationSteps = [
 
 export function UserbackMigrationSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
-            Migration
-          </p>
-          <h2 className="text-3xl font-bold md:text-4xl">
-            Switching from Userback
-          </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            No one-click import. Export your data, replace the widget, and wire
-            up the integrations — the whole process takes under an hour.
-          </p>
-        </div>
-
-        <ol className="mx-auto mt-12 grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-          {migrationSteps.map((step, i) => (
-            <li
-              key={step.label}
-              className="bg-background flex gap-4 rounded-xl border p-6"
-            >
-              <span className="text-muted-foreground font-mono text-sm">
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <h3 className="font-semibold">{step.label}</h3>
-                <p className="text-muted-foreground mt-2 leading-relaxed">
-                  {step.body}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ol>
-      </div>
-    </section>
+    <VsSection
+      eyebrow="Migration"
+      title="Switching from Userback"
+      intro="No one-click import. Export your data, replace the widget, and wire up the integrations. The whole process takes under an hour."
+      tone="muted"
+    >
+      <VsSteps
+        steps={migrationSteps}
+        illustration={
+          <WidgetSwapAnimation
+            competitorName="Userback"
+            competitorScriptSrc="https://static.userback.io/widget/v1.js"
+          />
+        }
+      />
+    </VsSection>
   );
 }

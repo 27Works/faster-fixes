@@ -1,5 +1,5 @@
 import { APP_URL } from "@/app/_constants/app";
-import { HowToSchema } from "@/app/_features/seo/how-to-schema";
+import { HowToSchema } from "@/app/_components/seo/how-to-schema";
 import { source } from "@/lib/docs/source";
 import {
   DocsBody,
@@ -10,13 +10,14 @@ import {
 } from "fumadocs-ui/layouts/docs/page";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import { getDocsMDXComponents } from "mdx-components";
+import { buildSocialMetadata } from "@/app/(public)/_helpers/build-social-metadata";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { docsHowToSchemas } from "./_features/docs-how-to-schemas";
 
-export default async function Page(props: PageProps<"/docs/[[...slug]]">) {
-  const params = await props.params;
-  const page = source.getPage(params.slug);
+export default async function Page({ params }: PageProps<"/docs/[[...slug]]">) {
+  const { slug } = await params;
+  const page = source.getPage(slug);
   if (!page) notFound();
 
   const MDX = page.data.body;
@@ -81,14 +82,6 @@ export async function generateMetadata(
     alternates: {
       canonical: `${APP_URL}${canonicalPath}`,
     },
-    openGraph: {
-      title,
-      description,
-      url: `${APP_URL}${canonicalPath}`,
-    },
-    twitter: {
-      title,
-      description,
-    },
+    ...buildSocialMetadata({ path: canonicalPath, title, description }),
   };
 }

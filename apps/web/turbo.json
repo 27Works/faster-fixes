@@ -2,12 +2,18 @@
   "$schema": "https://turborepo.dev/schema.v2.json",
   "extends": ["//"],
   "tasks": {
+    "test": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "env": ["TZ"]
+    },
     "build": {
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": [".next/**", "!.next/cache/**"],
+      "outputs": [".next/**", "!.next/cache/**", "public/recording-player/**"],
       "env": [
         "DOMAIN_NAME",
         "DATABASE_URL",
+        "DATABASE_PROVIDER",
 
         "BETTER_AUTH_SECRET",
         "BETTER_AUTH_URL",
@@ -20,17 +26,36 @@
         "PRO_YEARLY_PRICE_ID",
         "AGENCY_MONTHLY_PRICE_ID",
         "AGENCY_YEARLY_PRICE_ID",
+        "STRIPE_DEFAULT_TAX_RATE_ID",
 
+        "MAILER_PROVIDER",
+        "EMAIL_FROM",
+        "MAIL_FROM_DOMAIN",
+        "COMMERCIAL_EMAIL_FROM",
+        "SMTP_HOST",
+        "SMTP_PORT",
+        "SMTP_SECURE",
+        "SMTP_REQUIRE_TLS",
+        "SMTP_USER",
+        "SMTP_PASSWORD",
         "PLUNK_SECRET_KEY",
         "RESEND_API_KEY",
         "RESEND_SEGMENT_ID",
 
+        "STORAGE_PROVIDER",
+        "STORAGE_LOCAL_PATH",
+        "STORAGE_ENDPOINT",
+        "STORAGE_FORCE_PATH_STYLE",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_BUCKET_NAME",
         "STORAGE_REGION",
         "STORAGE_BUCKET_NAME",
         "NEXT_PUBLIC_STORAGE_BASE_URL",
         "R2_ACCOUNT_ID",
         "R2_ACCESS_KEY_ID",
         "R2_SECRET_ACCESS_KEY",
+        "AWS_REGION",
 
         "LINEAR_CLIENT_ID",
         "LINEAR_CLIENT_SECRET",
@@ -44,9 +69,19 @@
         "JIRA_TOKEN_ENCRYPTION_KEY",
         "JIRA_WEBHOOK_BASE_URL",
 
+        "TRELLO_CLIENT_ID",
+        "TRELLO_CLIENT_SECRET",
+        "TRELLO_OAUTH_REDIRECT_URI",
+        "TRELLO_TOKEN_ENCRYPTION_KEY",
+        "TRELLO_WEBHOOK_BASE_URL",
+
         "SLACK_CLIENT_ID",
         "SLACK_CLIENT_SECRET",
-        "SLACK_TOKEN_ENCRYPTION_KEY"
+        "SLACK_TOKEN_ENCRYPTION_KEY",
+
+        "GITHUB_APP_ID",
+        "GITHUB_PRIVATE_KEY",
+        "GITHUB_WEBHOOK_SECRET"
       ]
     }
   }

@@ -1,105 +1,36 @@
-# agent.md
+## Approach
+
+- Skip files over 100KB unless explicitly required.
+- Quote glob arguments (`--include='*.tsx'`) or use `rg`: zsh aborts on an unmatched glob. macOS has no `timeout`.
+- Recommend a new session when the user switches to an unrelated task.
+- Prefer enforceable rules in lint/CI/hooks over prompt text.
 
 ## Non-negotiables
 
-- You are FORBIDDEN from deleting any files yourself.
-- If a file must be retired by you: keep an empty `_deprecated_*.ts(x)` replacement with a short comment.
-- The user MAY delete files. If a file is already deleted (shows as `deleted` in git status), do NOT restore it — include the deletion as-is in the commit.
-- Never edit `.env`, `.env.local`, or any `.env*` file.
+- Delete files your change makes obsolete. Never delete untracked or gitignored files you did not create: git cannot restore them.
+- If a file already shows as `deleted` in git status, the user removed it on purpose: include the deletion as-is in the commit.
 - If env vars change, update `.env.example` only.
-- Never run production database migrations (`pnpm migrate:prod`).
-- Only run development migrations (`pnpm migrate:dev`); production migration execution is user-managed.
+- Install only to add or remove a dependency, never a bare `pnpm install` to refresh: pnpm rewrites the Prettier-quoted `pnpm-lock.yaml` into a ~20,000-line unrelated diff. Check the lockfile diff before committing.
+- Run development migrations only (`pnpm --filter @workspace/db migrate:dev`); production migrations are user-managed.
 - Code identifiers, comments, filenames, schemas: English only.
-- User-facing UI copy: English only. Professional, clear, and concise — match the tone of serious developer tools (e.g., Vercel, Linear, Stripe). No marketing fluff, no casual language, no exclamation marks. Prefer precise, understated wording.
-- All `unstable_cache` usage must include `cacheTags` from `@/server/cache/cache-tags`.
+- User-facing UI copy: English, in the precise, understated register of Vercel, Linear or Stripe. End sentences with periods, never exclamation marks.
+- Never use the em dash character (`—`) in user-facing text. Use a comma, colon, or period instead.
+- CI is the only publisher of `@fasterfixes/*` packages: write a changeset with the `release` skill and leave publishing to CI.
 
-## Code comments
+## Conventions
 
-- Comments exist to capture **decisions**, not describe code. A dev returning in 6 months should understand _why_ the code is this way, not _what_ it does.
-- Comment when: choosing one approach over an obvious alternative, working around a limitation, relying on non-obvious behavior, or enforcing a subtle business rule.
-- Never comment what the code plainly says (e.g. no `// get user` above `getUser()`).
-- Prefer a short inline `// why` over a multi-line block above a function.
-
-## Critical conventions
-
-- Follow detailed project rules in `.claude/rules/rules-index.md`.
-- Naming:
-- `*.client.tsx` for client components.
-- `*.server.tsx` for server components.
-- `*.trpc.query.ts` for tRPC queries.
-- `*.trpc.mutation.ts` for tRPC mutations.
-- `*.schema.ts` for Zod schemas.
-- When a form is used for both create and edit: split into a dialog wrapper (fetches data, `matchQueryStatus`) and a pure form component (receives loaded data as props).
+- Load the `coding-standards` skill before writing code, reviewing changes, or answering questions about conventions.
+- Comment only what the code cannot say (complex conditions, side effects, workarounds, business rules), as a short inline `// why`.
+- Next.js in `apps/web` postdates your training: before writing Next.js code, read its guide in `apps/web/node_modules/next/dist/docs/` and heed deprecation notices.
 
 ## Required checks before done
 
-- Run from repo root: `pnpm typecheck`.
-- Run both lint commands:
-- `pnpm lint` (all workspaces).
-- `pnpm lint:agent-rules` (web project rules only).
-- If DB schema changed: run required `packages/database` generation/migration commands.
-- Never declare completion while required checks fail.
-
-## Keep costs low
-
-- Reuse existing patterns in touched folders.
-- Keep edits scoped to the task.
-- Prefer enforceable rules in lint/CI/hooks over prompt text.
-
-## Subagent Strategy
-
-- Use subagents liberally to keep main context window clean
-- Offload research, exploration, and parallel analysis to subagents
-- For complex problems, throw more compute at it via subagents
-- One task per subagent for focused execution
-
-<!-- BEGIN:nextjs-agent-rules -->
-
-# Next.js: ALWAYS read docs before coding
-
-Before any Next.js work, find and read the relevant doc in `node_modules/next/dist/docs/`. Your training data is outdated — the docs are the source of truth.
-
-<!-- END:nextjs-agent-rules -->
-
-<!-- code-review-graph MCP tools -->
-
-## MCP Tools: code-review-graph
-
-**IMPORTANT: This project has a knowledge graph. ALWAYS use the
-code-review-graph MCP tools BEFORE using Grep/Glob/Read to explore
-the codebase.** The graph is faster, cheaper (fewer tokens), and gives
-you structural context (callers, dependents, test coverage) that file
-scanning cannot.
-
-### When to use graph tools FIRST
-
-- **Exploring code**: `semantic_search_nodes` or `query_graph` instead of Grep
-- **Understanding impact**: `get_impact_radius` instead of manually tracing imports
-- **Code review**: `detect_changes` + `get_review_context` instead of reading entire files
-- **Finding relationships**: `query_graph` with callers_of/callees_of/imports_of/tests_for
-- **Architecture questions**: `get_architecture_overview` + `list_communities`
-
-Fall back to Grep/Glob/Read **only** when the graph doesn't cover what you need.
-
-### Key Tools
-
-| Tool                        | Use when                                               |
-| --------------------------- | ------------------------------------------------------ |
-| `detect_changes`            | Reviewing code changes — gives risk-scored analysis    |
-| `get_review_context`        | Need source snippets for review — token-efficient      |
-| `get_impact_radius`         | Understanding blast radius of a change                 |
-| `get_affected_flows`        | Finding which execution paths are impacted             |
-| `query_graph`               | Tracing callers, callees, imports, tests, dependencies |
-| `semantic_search_nodes`     | Finding functions/classes by name or keyword           |
-| `get_architecture_overview` | Understanding high-level codebase structure            |
-| `refactor_tool`             | Planning renames, finding dead code                    |
-
-### Workflow
-
-1. The graph auto-updates on file changes (via hooks).
-2. Use `detect_changes` for code review.
-3. Use `get_affected_flows` to understand impact.
-4. Use `query_graph` pattern="tests_for" to check coverage.
+- Work is done only when these pass:
+  - The pre-commit hook, `.husky/pre-commit`, the single list of checks: read it rather than restating it. `git commit` runs it, so a successful commit is your proof; with no commit, run `sh .husky/pre-commit` from the repo root. Typecheck, tests and Knip read the whole working tree, so unstaged work fails the hook too, and parallel sessions each need their own worktree.
+  - `pnpm lint` and `pnpm format:check`. They cover every workspace where lint-staged covers only staged files, so they catch a file your change broke without touching it. Every lint rule is at `error` with zero warnings, so any report is a regression.
+- On a fresh clone or worktree, generate before you lint: the Prisma client, package builds and Next.js route types are untracked, and the type-aware lint rules report unrelated errors until `pnpm build:packages`, `pnpm --filter @workspace/db db:gen` and `pnpm --filter web exec next typegen` have run. `pnpm typecheck` generates them itself.
+- If the DB schema changed: `pnpm --filter @workspace/db migrate:dev`, then `pnpm --filter @workspace/db db:gen`.
+- A production build is `pnpm --filter web build` from the repo root: the filter resolves the workspace packages. It needs `GITHUB_PRIVATE_KEY` set, since `github-app.ts` reads it at module evaluation and page-data collection for `/api/github/setup` fails without it.
 
 ## Agent skills
 
@@ -109,8 +40,14 @@ Issues live in GitHub Issues at `manucoffin/faster-fixes`. See `docs/agents/issu
 
 ### Triage labels
 
-Default canonical vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+Five canonical triage roles, all using default label names. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context repo. Glossary at `CONTEXT.md` (created lazily by `/grill-with-docs`); ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+Single-context repo. Glossary at `CONTEXT.md`: name domain concepts with its terms. ADRs in `docs/adr/`. See `docs/agents/domain.md`.
+
+### Web app
+
+- `pnpm dev:server start|stop|status` runs the dev server in the background, in cloud mode so `/`, `/docs` and `/blog` render instead of redirecting to `/login`. `start` returns once the server answers, with its URL and log path.
+- `pnpm screenshot <path-or-url> [--selector <css>] [--width <px>]... [--mobile] [--full]` screenshots a dev server page, or the element `--selector` matches, at each width (`--mobile` adds 390px), and prints each PNG's path to open with Read.
+- Public docs and blog pages are MDX in `apps/web/src/content/docs` and `apps/web/src/content/blog`; each docs folder's `meta.json` sets its sidebar order.

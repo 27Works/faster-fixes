@@ -1,26 +1,37 @@
-import type { FaqItem } from "@/app/_features/seo/faq-schema";
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
+import type { FaqItem } from "@/app/_components/seo/faq-schema";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
+import {
+  markupIoPriceRise,
+  markupIoPro,
+  markupIoProBefore2025,
+} from "../_helpers/markup-io-prices";
+
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
 
 export const markupIoFaqs: FaqItem[] = [
   {
     question: "Is there a free Markup.io alternative?",
-    answer:
-      "Yes. FasterFixes is free to self-host with no member limits, and the hosted Pro plan is $20 a month flat for up to 5 members. The dashboard is AGPL-3.0 and the widget is MIT.",
+    answer: `Yes. FasterFixes is free to self-host with no member limits, and the hosted Pro plan is $${proPrice} a month flat for up to ${proPlan.seats} members. The dashboard is AGPL-3.0 and the widget is MIT.`,
   },
   {
     question: "Why did Markup.io raise its prices?",
-    answer:
-      "In January 2025 Markup.io raised Pro from $29 to $79 per month — a 172% increase — and removed the free plan entirely. Customers reported price changes of up to 280% on existing accounts and deletion notices for non-payment.",
+    answer: `In January 2025 Markup.io raised Pro from ${markupIoProBefore2025} to ${markupIoPro} per month, a ${markupIoPriceRise}% increase, and removed the free plan entirely. Customers reported price changes of up to 280% on existing accounts and deletion notices for non-payment.`,
   },
   {
     question: "Does FasterFixes work without a Chrome extension?",
     answer:
-      "Yes. FasterFixes runs as an in-page widget on every device the page supports — desktop, tablet, mobile. No browser extension required, including for auth-gated, localhost, and staging URLs.",
+      "Yes. FasterFixes runs as an in-page widget on every device the page supports: desktop, tablet, mobile. No browser extension required, including for auth-gated, localhost, and staging URLs.",
   },
   {
     question: "Can I self-host a Markup.io alternative?",
@@ -36,7 +47,7 @@ export const markupIoFaqs: FaqItem[] = [
   {
     question: "How does FasterFixes compare to Markup.io for web agencies?",
     answer:
-      "Markup.io is positioned for design review across file types. FasterFixes is built for agencies shipping React or Next.js apps where feedback needs to reach a developer or AI agent — component tree capture, structured sync to GitHub, Linear, and Jira, in-page widget on every device.",
+      "Markup.io is positioned for design review across file types. FasterFixes is built for agencies shipping websites and web apps on any stack where feedback needs to reach a developer or AI agent: DOM selector and React component tree capture, structured sync to GitHub, Linear, and Jira, in-page widget on every device.",
   },
 ];
 
@@ -58,7 +69,7 @@ export function MarkupIoFaqSection() {
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent>
-                  <p className="text-muted-foreground text-lg md:text-xl">
+                  <p className="text-lg text-muted-foreground md:text-xl">
                     {faq.answer}
                   </p>
                 </AccordionContent>

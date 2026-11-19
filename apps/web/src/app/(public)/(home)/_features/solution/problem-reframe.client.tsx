@@ -20,7 +20,7 @@ export function ProblemReframe() {
         {...fadeUp}
         transition={{ duration: 0.6, delay: 0.3 }}
       >
-        <span className="bg-primary/30 rounded px-2 py-0.5">
+        <span className="rounded bg-primary/30 px-2 py-0.5">
           FasterFixes makes the translation automatic.
         </span>
       </motion.p>
@@ -30,8 +30,8 @@ export function ProblemReframe() {
         {...fadeUp}
         transition={{ duration: 0.6, delay: 0.5 }}
       >
-        It connects your coding agent to client feedback via MCP and lets it fix
-        issues for you.
+        Your client points at the problem. You and your coding agent get the
+        technical context to fix it, without asking for details.
       </motion.p>
 
       <motion.p
@@ -39,7 +39,7 @@ export function ProblemReframe() {
         {...fadeUp}
         transition={{ duration: 0.6, delay: 0.65 }}
       >
-        Works with React and any coding agent.
+        Works on any website and with any coding agent.
       </motion.p>
     </div>
   );

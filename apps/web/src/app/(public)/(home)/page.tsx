@@ -4,14 +4,16 @@ import {
   SITE_NAME,
   SITE_TAGLINE,
 } from "@/app/_constants/seo";
-import { FaqSchema } from "@/app/_features/seo/faq-schema";
-import { OrganizationSchema } from "@/app/_features/seo/organization-schema";
-import { SoftwareApplicationSchema } from "@/app/_features/seo/software-application-schema";
-import { WebSiteSchema } from "@/app/_features/seo/website-schema";
+import { FaqSchema } from "@/app/_components/seo/faq-schema";
+import { OrganizationSchema } from "@/app/_components/seo/organization-schema";
+import { SoftwareApplicationSchema } from "@/app/(public)/_components/seo/software-application-schema";
+import { WebSiteSchema } from "@/app/_components/seo/website-schema";
+import { buildSocialMetadata } from "@/app/(public)/_helpers/build-social-metadata";
 import type { Metadata } from "next";
 
 import { BeforeAfterSection } from "./_features/before-after-section";
 import { ComparisonsSection } from "./_features/comparisons-section";
+import { ContextSection } from "./_features/context/context-section";
 import { FaqSection, faqs } from "./_features/faq-section";
 import { FinalCtaSection } from "./_features/final-cta-section";
 import { HeroSection } from "./_features/hero/hero-section";
@@ -19,12 +21,14 @@ import { HowItWorksSection } from "./_features/how-it-works/how-it-works-section
 import { IntegrationsSection } from "./_features/integrations-section";
 import { ProblemSection } from "./_features/problem/problem-section";
 import { SolutionSection } from "./_features/solution/solution-section";
-import { DemoFeedbackProvider } from "./_features/widget-demo/demo-feedback-provider.client";
+import { TestimonialsSection } from "@/app/_domains/testimonial/testimonials-section/testimonials-section";
+import { VideoReviewSection } from "./_features/video-review/video-review-section";
+import { DemoWidget } from "./_features/widget-demo/demo-widget.client";
 import { WorksWithSection } from "./_features/works-with-section";
 
 export const metadata: Metadata = {
   title: {
-    absolute: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    absolute: `${SITE_NAME}: ${SITE_TAGLINE}`,
   },
   description: SITE_META_DESCRIPTION,
   keywords: [
@@ -33,6 +37,8 @@ export const metadata: Metadata = {
     "visual feedback tool",
     "client feedback tool",
     "open source feedback widget",
+    "feedback widget for any website",
+    "WordPress feedback widget",
     "feedback widget for Next.js",
     "feedback widget React",
     "MCP server bug tracking",
@@ -46,27 +52,26 @@ export const metadata: Metadata = {
   alternates: {
     canonical: APP_URL,
   },
-  openGraph: {
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+  ...buildSocialMetadata({
+    path: "/",
+    title: `${SITE_NAME}: ${SITE_TAGLINE}`,
     description: SITE_META_DESCRIPTION,
-    url: APP_URL,
-  },
-  twitter: {
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
-    description: SITE_META_DESCRIPTION,
-  },
+  }),
 };
 
 export default function Page() {
   return (
-    <DemoFeedbackProvider>
+    <>
       <div>
         <HeroSection />
         <WorksWithSection />
         <HowItWorksSection />
+        <VideoReviewSection />
         <ProblemSection />
         <SolutionSection />
+        <ContextSection />
         <BeforeAfterSection />
+        <TestimonialsSection />
         <FaqSection />
         <FinalCtaSection />
         <IntegrationsSection />
@@ -77,6 +82,7 @@ export default function Page() {
         <WebSiteSchema />
         <SoftwareApplicationSchema />
       </div>
-    </DemoFeedbackProvider>
+      <DemoWidget />
+    </>
   );
 }

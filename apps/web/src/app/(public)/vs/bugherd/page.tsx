@@ -1,19 +1,17 @@
 import { APP_URL } from "@/app/_constants/app";
-import { SITE_NAME } from "@/app/_constants/seo";
-import { BreadcrumbSchema } from "@/app/_features/seo/breadcrumb-schema";
-import { FaqSchema } from "@/app/_features/seo/faq-schema";
-import { HowToSchema } from "@/app/_features/seo/how-to-schema";
-import { SoftwareApplicationSchema } from "@/app/_features/seo/software-application-schema";
-import { WebPageSchema } from "@/app/_features/seo/web-page-schema";
+import { BreadcrumbSchema } from "@/app/_components/seo/breadcrumb-schema";
+import { FaqSchema } from "@/app/_components/seo/faq-schema";
+import { HowToSchema } from "@/app/_components/seo/how-to-schema";
+import { SoftwareApplicationSchema } from "@/app/(public)/_components/seo/software-application-schema";
+import { WebPageSchema } from "@/app/_components/seo/web-page-schema";
+import { COMPETITOR_PRICES } from "@/app/(public)/_helpers/competitor-prices";
+import { formatPublishedPrice } from "@/app/(public)/_helpers/format-competitor-price";
+import { buildSocialMetadata } from "@/app/(public)/_helpers/build-social-metadata";
 import type { Metadata } from "next";
-import { BugherdBreadcrumb } from "./_features/bugherd-breadcrumb";
 import { BugherdComparisonSection } from "./_features/bugherd-comparison-section";
 import { BugherdCtaSection } from "./_features/bugherd-cta-section";
 import { BugherdDeveloperFirstSection } from "./_features/bugherd-developer-first-section";
-import {
-  BugherdFaqSection,
-  bugherdFaqs,
-} from "./_features/bugherd-faq-section";
+import { bugherdFaqs } from "./_features/bugherd-faqs";
 import { BugherdHero } from "./_features/bugherd-hero";
 import { BugherdHonestTakeSection } from "./_features/bugherd-honest-take-section";
 import {
@@ -23,13 +21,15 @@ import {
 import { BugherdPricingSection } from "./_features/bugherd-pricing-section";
 import { BugherdWhySwitchSection } from "./_features/bugherd-why-switch-section";
 import { VsCrossLinks } from "../_features/vs-cross-links";
+import { VsFaqSection } from "../_features/vs-faq-section";
+
+const { standard } = COMPETITOR_PRICES.bugherd.plans;
 
 const pageUrl = `${APP_URL}/vs/bugherd`;
-const title = `BugHerd alternative · Open-source feedback widget · ${SITE_NAME}`;
-const description =
-  "FasterFixes is the open-source, self-hostable BugHerd alternative for developer teams. Free when self-hosted, flat-rate when hosted, and shipped with an MCP server for Claude Code, Cursor, and Codex.";
+const title = "BugHerd Alternative: Open-Source, Self-Hosted, No Seat Fees";
+const description = `BugHerd costs ${formatPublishedPrice(standard, "/mo")} for ${standard.seats} members. FasterFixes is an open-source feedback widget, free to self-host, with MCP for Claude Code and Cursor.`;
 const datePublished = "2026-04-25T00:00:00.000Z";
-const dateModified = "2026-04-25T00:00:00.000Z";
+const dateModified = "2026-11-12T00:00:00.000Z";
 
 export const metadata: Metadata = {
   title: {
@@ -49,22 +49,16 @@ export const metadata: Metadata = {
   alternates: {
     canonical: pageUrl,
   },
-  openGraph: {
+  ...buildSocialMetadata({
+    path: "/vs/bugherd",
     title,
     description,
-    url: pageUrl,
-    type: "website",
-  },
-  twitter: {
-    title,
-    description,
-  },
+  }),
 };
 
 export default function Page() {
   return (
     <div>
-      <BugherdBreadcrumb />
       <BugherdHero />
       <BugherdWhySwitchSection />
       <BugherdHonestTakeSection />
@@ -72,7 +66,7 @@ export default function Page() {
       <BugherdComparisonSection />
       <BugherdPricingSection />
       <BugherdMigrationSection />
-      <BugherdFaqSection />
+      <VsFaqSection faqs={bugherdFaqs} />
       <BugherdCtaSection />
       <VsCrossLinks currentSlug="bugherd" />
 

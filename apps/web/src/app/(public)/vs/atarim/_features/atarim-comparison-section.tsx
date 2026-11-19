@@ -1,6 +1,33 @@
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
 import { CheckIcon, MinusIcon, XIcon } from "lucide-react";
 
-type Cell = string | { type: "yes" | "no" | "partial"; note?: string };
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import {
+  formatAmount,
+  formatPrice,
+} from "../../../_helpers/format-competitor-price";
+
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const agencyPrice = PLAN_PRICES[SubscriptionPlanName.Agency];
+const atarimPro = COMPETITOR_PRICES.atarim.plans.pro;
+const atarimProBilledYearly = formatAmount(
+  atarimPro.billedYearlyAmount,
+  atarimPro.currency,
+);
+const atarimProYearlyTotal = formatAmount(
+  Math.round(atarimPro.billedYearlyAmount * 12 * 100) / 100,
+  atarimPro.currency,
+);
+
+type CellType = "yes" | "no" | "partial";
+type Cell = string | { type: CellType; note?: string };
+
+const freeFeedbackLimit = PLAN_LIMITS[SubscriptionPlanName.Free].feedbacks;
+const freeProjectLimit = PLAN_LIMITS[SubscriptionPlanName.Free].projects;
 
 const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
@@ -21,22 +48,22 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Pricing model",
     cells: [
-      "Flat per-workspace · free, $20/mo, $99/mo",
-      "Per seat · Pro $25/yr or $29/mo · Business $35/yr or $42/mo",
+      `Flat per-workspace · free, $${proPrice}/mo, $${agencyPrice}/mo`,
+      `Flat per workspace · free, ${atarimPro.name} ${formatPrice(atarimPro)}/mo or ${atarimProBilledYearly}/mo billed yearly, Enterprise custom · AI credits on top`,
     ],
   },
   {
     label: "Cost for a 5-person team",
     cells: [
-      "$0 self-host · $20/mo hosted Pro",
-      "$125/mo Pro (billed yearly) · $1,500/year",
+      `$0 self-host · $${proPrice}/mo hosted Pro`,
+      `${formatPrice(atarimPro)}/mo ${atarimPro.name} · ${atarimProYearlyTotal}/year billed yearly`,
     ],
   },
   {
     label: "MCP / AI agent integration",
     cells: [
-      { type: "yes", note: "Claude Code, Cursor, Codex" },
-      { type: "no" },
+      { type: "yes", note: "Feedback context · Claude Code, Cursor, Codex" },
+      { type: "yes", note: "Tasks, sites, workflows · Claude, Codex" },
     ],
   },
   {
@@ -49,7 +76,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Stack support",
     cells: [
-      "React / Next.js native · basic HTML embed",
+      "Any stack · script tag or React package",
       "JS snippet · Chrome extension · WordPress plugin",
     ],
   },
@@ -59,7 +86,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   },
   {
     label: "React component tree capture",
-    cells: [{ type: "yes" }, { type: "no" }],
+    cells: [{ type: "yes", note: "On React sites" }, { type: "no" }],
   },
   {
     label: "Auto context (URL, DOM, browser, viewport)",
@@ -69,35 +96,45 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     ],
   },
   {
-    label: "Video recording",
+    label: "Screen recording",
     cells: [{ type: "no" }, { type: "no" }],
   },
   {
+    label: "Video review (uploaded videos)",
+    cells: [
+      { type: "yes", note: "Timestamped · area on the frame" },
+      { type: "no" },
+    ],
+  },
+  {
     label: "Session replay",
-    cells: [{ type: "no" }, { type: "no" }],
+    cells: [
+      { type: "yes", note: "Last minute before each feedback · all plans" },
+      { type: "no" },
+    ],
   },
   {
     label: "Whitelabel / custom branding",
     cells: [
       { type: "partial", note: "Roadmap" },
-      { type: "yes", note: "Enterprise only" },
+      { type: "yes", note: "Your brand on the client dashboard · Pro" },
     ],
   },
   {
     label: "Client portal",
-    cells: [
-      { type: "no" },
-      { type: "yes", note: "Login + guest link" },
-    ],
+    cells: [{ type: "no" }, { type: "yes", note: "Login + guest link" }],
   },
   {
     label: "WordPress integration",
-    cells: [{ type: "no" }, { type: "yes", note: "Dedicated plugin" }],
+    cells: [
+      { type: "partial", note: "Script tag · no plugin" },
+      { type: "yes", note: "Dedicated plugin" },
+    ],
   },
   {
     label: "Project management integrations",
     cells: [
-      "GitHub, Linear, Jira · more coming",
+      "GitHub, Linear, Jira, Trello · more coming",
       "Jira, Asana, ClickUp, Monday, Trello, Slack, Figma, Zapier, +",
     ],
   },
@@ -109,11 +146,15 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     ],
   },
   {
-    label: "GitHub two-way sync",
+    label: "Trello sync",
     cells: [
+      { type: "yes", note: "Bidirectional · status follows the mapped lists" },
       { type: "yes" },
-      { type: "partial", note: "Via integration" },
     ],
+  },
+  {
+    label: "GitHub two-way sync",
+    cells: [{ type: "yes" }, { type: "partial", note: "Via integration" }],
   },
   {
     label: "Linear two-way sync",
@@ -125,8 +166,11 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Free plan",
     cells: [
-      { type: "yes", note: "1 project · 50 items · forever" },
-      { type: "yes", note: "1 seat · 2 projects · 200 AI credits/mo" },
+      {
+        type: "yes",
+        note: `${freeProjectLimit} project · ${freeFeedbackLimit} items · forever`,
+      },
+      { type: "yes", note: "1 project · 200 AI credits, one time" },
     ],
   },
   {
@@ -137,24 +181,31 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
 
 const headers = ["FasterFixes", "Atarim"] as const;
 
+type CellIconProps = { type: CellType };
+
+function CellIcon({ type }: CellIconProps) {
+  if (type === "yes") {
+    return <CheckIcon className="size-5 text-success" aria-label="Yes" />;
+  }
+
+  if (type === "no") {
+    return <XIcon className="size-5 text-destructive" aria-label="No" />;
+  }
+
+  return (
+    <MinusIcon className="size-5 text-muted-foreground" aria-label="Partial" />
+  );
+}
+
 function renderCell(cell: Cell) {
   if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
+    return <span className="text-sm text-muted-foreground">{cell}</span>;
   }
   return (
     <div className="flex flex-col gap-1">
-      {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
-      ) : cell.type === "no" ? (
-        <XIcon className="text-destructive size-5" aria-label="No" />
-      ) : (
-        <MinusIcon
-          className="text-muted-foreground size-5"
-          aria-label="Partial"
-        />
-      )}
+      <CellIcon type={cell.type} />
       {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
+        <span className="text-xs text-muted-foreground">{cell.note}</span>
       )}
     </div>
   );
@@ -162,16 +213,16 @@ function renderCell(cell: Cell) {
 
 export function AtarimComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
+    <section className="w-full border-y bg-muted/30 py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Compare
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
             FasterFixes vs Atarim: full feature comparison
           </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
+          <p className="mt-4 text-lg text-muted-foreground">
             Side-by-side comparison based on each product&apos;s public
             documentation and pricing page.
           </p>
@@ -217,9 +268,9 @@ export function AtarimComparisonSection() {
           </table>
         </div>
 
-        <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-center text-sm">
+        <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted-foreground">
           Pricing and feature availability as publicly listed on each
-          vendor&apos;s website. Last updated May 12, 2026.
+          vendor&apos;s website. Last updated Nov 12, 2026.
         </p>
       </div>
     </section>

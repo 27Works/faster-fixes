@@ -1,22 +1,30 @@
 import { inngest } from "@/server/inngest";
-import { addContactToSegment } from "@/server/inngest/add-contact-to-segment";
-import { createGitHubIssue } from "@/server/inngest/create-github-issue";
-import { createJiraIssue } from "@/server/inngest/create-jira-issue";
-import { createLinearIssue } from "@/server/inngest/create-linear-issue";
-import { handleJiraOAuthRevoked } from "@/server/inngest/handle-jira-oauth-revoked";
-import { handleLinearOAuthRevoked } from "@/server/inngest/handle-linear-oauth-revoked";
-import { notifySlackFeedbackCreated } from "@/server/inngest/notify-slack-feedback-created";
-import { refreshJiraInstallationWebhooks } from "@/server/inngest/refresh-jira-installation-webhooks";
-import { refreshJiraWebhooks } from "@/server/inngest/refresh-jira-webhooks";
-import { sendWelcomeEmail } from "@/server/inngest/send-welcome-email";
-import { syncFeedbackScreenshotToGitHub } from "@/server/inngest/sync-feedback-screenshot-to-github";
-import { syncFeedbackStatusToGitHub } from "@/server/inngest/sync-feedback-status-to-github";
-import { syncFeedbackStatusToJira } from "@/server/inngest/sync-feedback-status-to-jira";
-import { syncFeedbackStatusToLinear } from "@/server/inngest/sync-feedback-status-to-linear";
-import { syncGitHubIssueStatus } from "@/server/inngest/sync-github-issue-status";
-import { syncJiraIssueStatus } from "@/server/inngest/sync-jira-issue-status";
-import { syncLinearIssueStatus } from "@/server/inngest/sync-linear-issue-status";
-import { updateSlackFeedbackMessage } from "@/server/inngest/update-slack-feedback-message";
+import { addContactToSegment } from "@/app/_domains/user/_services/add-contact-to-segment.inngest";
+import { createGitHubIssue } from "@/app/_domains/integration/_services/github/create-github-issue.inngest";
+import { createJiraIssue } from "@/app/_domains/integration/_services/jira/create-jira-issue.inngest";
+import { createLinearIssue } from "@/app/_domains/integration/_services/linear/create-linear-issue.inngest";
+import { handleJiraOAuthRevoked } from "@/app/_domains/integration/_services/jira/handle-jira-oauth-revoked.inngest";
+import { handleTrelloOAuthRevoked } from "@/app/_domains/integration/_services/trello/handle-trello-oauth-revoked.inngest";
+import { requestTrelloCard } from "@/app/_domains/integration/_services/trello/request-trello-card.inngest";
+import { createTrelloCard } from "@/app/_domains/integration/_services/trello/create-trello-card.inngest";
+import { refreshTrelloCardRecording } from "@/app/_domains/integration/_services/trello/refresh-trello-card-recording.inngest";
+import { handleLinearOAuthRevoked } from "@/app/_domains/integration/_services/linear/handle-linear-oauth-revoked.inngest";
+import { notifySlackFeedbackCreated } from "@/app/_domains/integration/_services/slack/notify-slack-feedback-created.inngest";
+import { refreshJiraInstallationWebhooks } from "@/app/_domains/integration/_services/jira/refresh-jira-installation-webhooks.inngest";
+import { refreshJiraWebhooks } from "@/app/_domains/integration/_services/jira/refresh-jira-webhooks.inngest";
+import { scanTestimonialRequests } from "@/app/_domains/testimonial/_services/scan-testimonial-requests.inngest";
+import { sendTestimonialRequestSequence } from "@/app/_domains/testimonial/_services/send-testimonial-request-sequence.inngest";
+import { reapAbandonedVideoUploads } from "@/app/_domains/video/_services/reap-abandoned-video-uploads.inngest";
+import { sendWelcomeEmail } from "@/app/_domains/user/_services/send-welcome-email.inngest";
+import { syncFeedbackStatusToGitHub } from "@/app/_domains/integration/_services/github/sync-feedback-status-to-github.inngest";
+import { syncFeedbackStatusToJira } from "@/app/_domains/integration/_services/jira/sync-feedback-status-to-jira.inngest";
+import { syncFeedbackStatusToTrello } from "@/app/_domains/integration/_services/trello/sync-feedback-status-to-trello.inngest";
+import { syncTrelloCardStatus } from "@/app/_domains/integration/_services/trello/sync-trello-card-status.inngest";
+import { syncFeedbackStatusToLinear } from "@/app/_domains/integration/_services/linear/sync-feedback-status-to-linear.inngest";
+import { syncGitHubIssueStatus } from "@/app/_domains/integration/_services/github/sync-github-issue-status.inngest";
+import { syncJiraIssueStatus } from "@/app/_domains/integration/_services/jira/sync-jira-issue-status.inngest";
+import { syncLinearIssueStatus } from "@/app/_domains/integration/_services/linear/sync-linear-issue-status.inngest";
+import { updateSlackFeedbackMessage } from "@/app/_domains/integration/_services/slack/update-slack-feedback-message.inngest";
 import { serve } from "inngest/next";
 
 // Required by v4 checkpointing: client maxRuntime ("50s") must sit below this.
@@ -28,7 +36,6 @@ export const { GET, POST, PUT } = serve({
     createGitHubIssue,
     syncGitHubIssueStatus,
     syncFeedbackStatusToGitHub,
-    syncFeedbackScreenshotToGitHub,
     createLinearIssue,
     syncLinearIssueStatus,
     syncFeedbackStatusToLinear,
@@ -36,12 +43,21 @@ export const { GET, POST, PUT } = serve({
     createJiraIssue,
     syncJiraIssueStatus,
     syncFeedbackStatusToJira,
+    syncFeedbackStatusToTrello,
+    syncTrelloCardStatus,
     handleJiraOAuthRevoked,
     refreshJiraWebhooks,
     refreshJiraInstallationWebhooks,
+    handleTrelloOAuthRevoked,
+    requestTrelloCard,
+    createTrelloCard,
+    refreshTrelloCardRecording,
     sendWelcomeEmail,
     addContactToSegment,
+    scanTestimonialRequests,
+    sendTestimonialRequestSequence,
     notifySlackFeedbackCreated,
     updateSlackFeedbackMessage,
+    reapAbandonedVideoUploads,
   ],
 });

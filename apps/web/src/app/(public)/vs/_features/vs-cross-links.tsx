@@ -12,14 +12,34 @@ type VsSlug =
   | "usersnap";
 
 const allComparisons: { slug: VsSlug; label: string; href: Route }[] = [
-  { slug: "bugherd", label: "BugHerd alternative", href: "/vs/bugherd" as Route },
-  { slug: "marker-io", label: "Marker.io alternative", href: "/vs/marker-io" as Route },
-  { slug: "usersnap", label: "Usersnap alternative", href: "/vs/usersnap" as Route },
-  { slug: "userback", label: "Userback alternative", href: "/vs/userback" as Route },
+  {
+    slug: "bugherd",
+    label: "BugHerd alternative",
+    href: "/vs/bugherd" as Route,
+  },
+  {
+    slug: "marker-io",
+    label: "Marker.io alternative",
+    href: "/vs/marker-io" as Route,
+  },
+  {
+    slug: "usersnap",
+    label: "Usersnap alternative",
+    href: "/vs/usersnap" as Route,
+  },
+  {
+    slug: "userback",
+    label: "Userback alternative",
+    href: "/vs/userback" as Route,
+  },
   { slug: "atarim", label: "Atarim alternative", href: "/vs/atarim" as Route },
   { slug: "gleap", label: "Gleap alternative", href: "/vs/gleap" as Route },
   { slug: "ruttl", label: "Ruttl alternative", href: "/vs/ruttl" as Route },
-  { slug: "markup-io", label: "Markup.io alternative", href: "/vs/markup-io" as Route },
+  {
+    slug: "markup-io",
+    label: "Markup.io alternative",
+    href: "/vs/markup-io" as Route,
+  },
 ];
 
 type VsCrossLinksProps = {
@@ -30,16 +50,16 @@ export function VsCrossLinks({ currentSlug }: VsCrossLinksProps) {
   const others = allComparisons.filter((c) => c.slug !== currentSlug);
 
   return (
-    <section className="w-full py-12 md:py-16">
+    <section className="w-full border-t py-16 md:py-20">
       <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-3xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+        <div className="max-w-4xl">
+          <p className="mb-4 text-sm text-muted-foreground">
             Compare other tools
           </p>
-          <h2 className="text-2xl font-bold md:text-3xl">
+          <h2 className="text-2xl font-semibold tracking-tight md:text-3xl">
             Also comparing FasterFixes to
           </h2>
-          <ul className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-base">
+          <ul className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 text-base">
             {others.map((item, i) => (
               <li key={item.slug} className="flex items-center gap-x-6">
                 <Link

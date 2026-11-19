@@ -13,6 +13,8 @@
   "disableArtifact": true,
   "permissions": {
     "allow": [
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
       "Edit(src/**)",
       "Bash(git:*)",
       "Bash(pnpm:*)",
@@ -31,27 +33,41 @@
     ],
     "ask": [],
     "deny": [
-      "Read(**/.env)",
-      "Read(**/.env.*)",
-      "Read(.env)",
-      "Read(.env.*)",
-      "Edit(**/.env)",
-      "Edit(**/.env.*)",
-      "Edit(.env)",
-      "Edit(.env.*)",
-      "Bash(cat *.env*)",
-      "Bash(rm:*)",
-      "Bash(rm -rf:*)",
-      "Bash(rmdir:*)",
       "Bash(npm run:*)",
       "Bash(pnpm build)",
-      "Bash(pnpm build:*)",
+
       "Bash(pnpm db:seed)",
       "Bash(pnpm db:pull)",
-      "Bash(pnpm migrate:dev)",
       "Bash(pnpm migrate:prod)",
       "Bash(pnpm migrate:createonly)",
       "Bash(pnpm migrate:reset)",
+      "Bash(pnpm --filter @workspace/db db:seed:*)",
+      "Bash(pnpm --filter @workspace/db db:pull:*)",
+      "Bash(pnpm --filter @workspace/db migrate:prod:*)",
+      "Bash(pnpm --filter @workspace/db migrate:createonly:*)",
+      "Bash(pnpm --filter @workspace/db migrate:reset:*)",
+
+      "Bash(pnpm release:*)",
+      "Bash(pnpm changeset publish:*)",
+
+      "Bash(cat *.env*)",
+      "Read(**/.env)",
+      "Read(**/.env.local)",
+      "Read(**/.env.*.local)",
+      "Read(**/.env.development)",
+      "Read(**/.env.production)",
+      "Read(**/.env.staging)",
+      "Read(**/.env.preview)",
+      "Read(**/.env.test)",
+
+      "Edit(**/.env)",
+      "Edit(**/.env.local)",
+      "Edit(**/.env.*.local)",
+      "Edit(**/.env.development)",
+      "Edit(**/.env.production)",
+      "Edit(**/.env.staging)",
+      "Edit(**/.env.preview)",
+      "Edit(**/.env.test)",
 
       "EnterPlanMode",
       "ExitPlanMode",
@@ -69,26 +85,47 @@
     ]
   },
   "hooks": {
-    "PostToolUse": [
+    "PreToolUse": [
       {
-        "matcher": "Edit|Write|Bash",
+        "matcher": "Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "code-review-graph update --skip-flows",
-            "timeout": 30
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous-git.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-rm.py"
           }
         ]
       }
     ],
-    "SessionStart": [
+    "PostToolUse": [
       {
-        "matcher": "",
+        "matcher": "Edit|Write",
         "hooks": [
           {
             "type": "command",
-            "command": "code-review-graph status",
-            "timeout": 10
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 5,
+            "statusMessage": "Checking UI changes"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PROJECT_DIR}/.claude/skills/impeccable/scripts/impeccable\" hook",
+            "timeout": 30,
+            "statusMessage": "Design deep pass"
           }
         ]
       }

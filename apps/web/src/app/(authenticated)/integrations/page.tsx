@@ -3,15 +3,24 @@ import { JiraIcon } from "@workspace/ui/components/icons/jira-icon";
 import { LinearIcon } from "@workspace/ui/components/icons/linear-icon";
 import { McpIcon } from "@workspace/ui/components/icons/mcp-icon";
 import { SlackIcon } from "@workspace/ui/components/icons/slack-icon";
+import { TrelloIcon } from "@workspace/ui/components/icons/trello-icon";
+import Link from "next/link";
 import { DashboardSection } from "@/app/(authenticated)/_features/dashboard/dashboard-section";
-import { DashboardPageContent } from "@/app/_features/core/dashboard/dashboard-page-content";
+import { DashboardPageContent } from "@/app/_components/dashboard/dashboard-page-content";
 import { AgentTokensSection } from "./_features/agent-tokens/agent-tokens-section.client";
 import { GitHubIntegrationSection } from "./_features/github/github-integration-section.client";
 import { JiraIntegrationSection } from "./_features/jira/jira-integration-section.client";
 import { LinearIntegrationSection } from "./_features/linear/linear-integration-section.client";
 import { SlackIntegrationSection } from "./_features/slack/slack-integration-section.client";
+import { TrelloIntegrationSection } from "./_features/trello/trello-integration-section.client";
 
-export default function IntegrationsPage() {
+export default async function IntegrationsPage({
+  searchParams,
+}: PageProps<"/integrations">) {
+  // The Trello callback lands here with `?trello=cancelled` when the User
+  // declined the consent screen.
+  const { trello } = await searchParams;
+
   return (
     <DashboardPageContent breadcrumbs={[{ label: "Integrations" }]}>
       <div className="flex flex-col gap-12">
@@ -60,6 +69,20 @@ export default function IntegrationsPage() {
         <DashboardSection
           title={
             <span className="flex items-center gap-2.5">
+              <TrelloIcon colored className="size-6 shrink-0" />
+              Trello
+            </span>
+          }
+          description="Connect your Trello account to mirror feedback into Trello as cards."
+          cardTitle="Trello integration"
+          cardClassName="lg:max-w-lg"
+        >
+          <TrelloIntegrationSection consentCancelled={trello === "cancelled"} />
+        </DashboardSection>
+
+        <DashboardSection
+          title={
+            <span className="flex items-center gap-2.5">
               <SlackIcon colored className="size-6 shrink-0" />
               Slack
             </span>
@@ -81,12 +104,12 @@ export default function IntegrationsPage() {
           description={
             <>
               API tokens for authenticating the Faster Fixes MCP server.{" "}
-              <a
+              <Link
                 href="/docs/mcp/setup"
                 className="text-primary underline underline-offset-4 hover:text-primary/80"
               >
                 Setup guide
-              </a>
+              </Link>
             </>
           }
           cardTitle="MCP Server"

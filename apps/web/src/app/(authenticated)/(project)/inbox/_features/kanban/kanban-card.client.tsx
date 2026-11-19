@@ -1,33 +1,32 @@
 "use client";
 
-import { useDraggable } from "@dnd-kit/core";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@workspace/ui/components/avatar";
+import { VideoSourceLine } from "@/app/_domains/video/_components/video-source-line";
+import { useSortable } from "@dnd-kit/sortable";
 import { Checkbox } from "@workspace/ui/components/checkbox";
-import { GithubIcon } from "@workspace/ui/components/icons/github-icon";
-import { resolveS3Url } from "@/server/storage/resolve-s3-url";
 import { cn } from "@workspace/ui/lib/utils";
 import { formatDistanceToNow } from "date-fns";
-import { GripVertical } from "lucide-react";
-import type { GetFeedbackOutput } from "../get-feedback.trpc.query";
+import { getWaitingDays, isWaitingTooLong } from "../../_helpers/board-summary";
+import type { ListFeedbackOutput } from "../../_services/list-feedback";
+import { getFeedbackStatusAppearance } from "@/app/_domains/feedback/_components/feedback-status-appearance";
+import { AssigneeAvatar, TrackerChips, WaitingChip } from "./kanban-card-parts";
 
-type FeedbackItem = GetFeedbackOutput[number];
+type FeedbackItem = ListFeedbackOutput[number];
 
 type KanbanCardProps = {
   feedback: FeedbackItem;
   isSelected: boolean;
-  selectionMode: boolean;
+  isDraggable: boolean;
+  // Lets the other cards make room while dragging, which only the Manual sort
+  // persists.
+  isSortable: boolean;
   onToggleSelect: (id: string) => void;
   onSelect: (id: string) => void;
 };
 
-function formatPageUrl(url: string) {
+// The host is the same for every Feedback of a Project, so only the path helps.
+function formatPagePath(url: string) {
   try {
-    const parsed = new URL(url);
-    return parsed.hostname + parsed.pathname.replace(/\/$/, "");
+    return new URL(url).pathname.replace(/\/$/, "") || "/";
   } catch {
     return url;
   }
@@ -36,10 +35,9 @@ function formatPageUrl(url: string) {
 type KanbanCardViewProps = {
   feedback: FeedbackItem;
   isSelected: boolean;
-  selectionMode: boolean;
+  isDraggable?: boolean;
   isOverlay?: boolean;
   isDragging?: boolean;
-  dragHandle?: React.ReactNode;
   onToggleSelect?: (id: string) => void;
   onSelect?: (id: string) => void;
 };
@@ -48,81 +46,95 @@ type KanbanCardViewProps = {
 function KanbanCardView({
   feedback,
   isSelected,
-  selectionMode,
+  isDraggable,
   isOverlay,
   isDragging,
-  dragHandle,
   onToggleSelect,
   onSelect,
 }: KanbanCardViewProps) {
+  const appearance = getFeedbackStatusAppearance(feedback.status);
+  const StatusIcon = appearance.icon;
+  const now = new Date();
+  const isWaiting = isWaitingTooLong(feedback, now);
+  const hasTracker = [
+    feedback.issueLink,
+    feedback.linearIssueLink,
+    feedback.jiraIssueLink,
+    feedback.trelloIssueLink,
+  ].some(Boolean);
+
   return (
     <div
       className={cn(
-        "group bg-card border-border flex cursor-pointer gap-2 rounded-lg border p-3 transition-shadow hover:shadow-sm",
+        "flex gap-2 rounded-lg border border-border bg-card p-3 transition-[box-shadow,border-color] hover:border-foreground/20 hover:shadow-sm",
+        // The open hand says the card moves; the hover lift says it opens.
+        isDraggable ? "cursor-grab active:cursor-grabbing" : "cursor-pointer",
         isOverlay && "cursor-grabbing shadow-lg",
         // Source stays in flow but invisible; DragOverlay shows the moving copy.
         isDragging && "invisible",
+        isSelected && "border-primary/40 bg-primary/5 hover:border-primary/60",
       )}
       onClick={() => {
         if (isOverlay) return;
         onSelect?.(feedback.id);
       }}
     >
-      {selectionMode && (
-        <div
-          className="flex items-start pt-0.5"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={() => onToggleSelect?.(feedback.id)}
-          />
-        </div>
-      )}
+      <div
+        className="flex items-start pt-0.5"
+        onClick={(e) => e.stopPropagation()}
+        // Keeps a press on the checkbox from starting a drag of the card.
+        onMouseDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+      >
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggleSelect?.(feedback.id)}
+          aria-label="Select feedback"
+        />
+      </div>
+
+      <StatusIcon
+        className={cn("mt-0.5 size-4 shrink-0", appearance.iconClassName)}
+      />
 
       <div className="min-w-0 flex-1">
         <p className="line-clamp-3 text-sm leading-snug">{feedback.comment}</p>
 
-        <p className="text-muted-foreground mt-1.5 truncate text-xs">
-          {formatPageUrl(feedback.pageUrl)}
-        </p>
+        {feedback.videoTitle !== null ? (
+          <VideoSourceLine
+            className="mt-1"
+            title={feedback.videoTitle}
+            startMs={feedback.startMs}
+            endMs={feedback.endMs}
+          />
+        ) : (
+          feedback.pageUrl && (
+            <p className="mt-1 truncate text-xs text-muted-foreground">
+              {formatPagePath(feedback.pageUrl)}
+            </p>
+          )
+        )}
 
-        <div className="mt-2 flex items-center gap-2">
-          {feedback.assignee ? (
-            <Avatar className="size-5">
-              <AvatarImage
-                src={
-                  feedback.assignee.image
-                    ? resolveS3Url(feedback.assignee.image)
-                    : undefined
-                }
-                className="object-cover"
-              />
-              <AvatarFallback className="text-[10px]">
-                {feedback.assignee.name?.charAt(0)?.toUpperCase() ?? "?"}
-              </AvatarFallback>
-            </Avatar>
-          ) : (
-            <div className="bg-muted size-5 rounded-full" />
-          )}
+        {(isWaiting || hasTracker) && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {isWaiting && (
+              <WaitingChip days={getWaitingDays(feedback.createdAt, now)} />
+            )}
+            <TrackerChips feedback={feedback} />
+          </div>
+        )}
 
-          <span className="text-muted-foreground truncate text-xs">
-            {feedback.reviewer.name}
+        <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate">{feedback.reviewer.name}</span>
+          <span aria-hidden>·</span>
+          <span className="shrink-0">
+            {formatDistanceToNow(feedback.createdAt, { addSuffix: true })}
           </span>
-
-          {feedback.issueLink && (
-            <GithubIcon className="text-muted-foreground size-3.5 shrink-0" />
-          )}
-
-          <span className="text-muted-foreground ml-auto shrink-0 text-xs">
-            {formatDistanceToNow(new Date(feedback.createdAt), {
-              addSuffix: true,
-            })}
-          </span>
+          <div className="ml-auto shrink-0">
+            <AssigneeAvatar assignee={feedback.assignee} />
+          </div>
         </div>
       </div>
-
-      {dragHandle}
     </div>
   );
 }
@@ -130,33 +142,39 @@ function KanbanCardView({
 export function KanbanCard({
   feedback,
   isSelected,
-  selectionMode,
+  isDraggable,
+  isSortable,
   onToggleSelect,
   onSelect,
 }: KanbanCardProps) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    isDragging,
+    transform,
+    transition,
+  } = useSortable({
     id: feedback.id,
-    data: { feedback },
+    data: { status: feedback.status },
+    disabled: !isDraggable,
   });
 
-  const handle = (
-    <div
-      className="text-muted-foreground hidden shrink-0 cursor-grab items-center opacity-0 transition-opacity group-hover:opacity-100 lg:flex"
-      {...listeners}
-      {...attributes}
-    >
-      <GripVertical className="size-4" />
-    </div>
-  );
+  const style =
+    isSortable && transform
+      ? {
+          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+          transition,
+        }
+      : undefined;
 
   return (
-    <div ref={setNodeRef}>
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
       <KanbanCardView
         feedback={feedback}
         isSelected={isSelected}
-        selectionMode={selectionMode}
+        isDraggable={isDraggable}
         isDragging={isDragging}
-        dragHandle={handle}
         onToggleSelect={onToggleSelect}
         onSelect={onSelect}
       />
@@ -167,20 +185,13 @@ export function KanbanCard({
 type KanbanCardOverlayProps = {
   feedback: FeedbackItem;
   isSelected: boolean;
-  selectionMode: boolean;
 };
 
 export function KanbanCardOverlay({
   feedback,
   isSelected,
-  selectionMode,
 }: KanbanCardOverlayProps) {
   return (
-    <KanbanCardView
-      feedback={feedback}
-      isSelected={isSelected}
-      selectionMode={selectionMode}
-      isOverlay
-    />
+    <KanbanCardView feedback={feedback} isSelected={isSelected} isOverlay />
   );
 }

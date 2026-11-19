@@ -4,19 +4,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import type { Route } from "next";
+import Link from "next/link";
 
 const capabilities = [
   {
     title: "Status sync that survives custom workflows",
-    body: "Status changes flow both ways. Sync keys on Jira's status category — To Do, In Progress, Done — rather than the status name, so renamed statuses and custom workflows keep working.",
+    body: "Status changes flow both ways. Sync keys on Jira's status category: To Do, In Progress, Done. It does not key on the status name, so renamed statuses and custom workflows keep working.",
   },
   {
     title: "Issues created with the data engineers need",
-    body: "Each issue carries the client's comment, the page URL, the React component path, source file and CSS selector, a screenshot link, and the browser, OS, console logs and network errors captured at submission.",
+    body: "Each issue carries the client's comment, the page URL, the React component path, source file and CSS selector, a screenshot link, the browser and OS, a link to replay the last minute on the page, and a timeline of the client's steps, console logs and network errors before submission.",
   },
   {
     title: "Track the issue key without leaving Faster Fixes",
-    body: "The Faster Fixes inbox shows a Jira badge with the issue key (e.g. PROJ-123) and a status dot. A feedback item can be linked to Jira, GitHub, Linear, any combination, or none.",
+    body: "The Faster Fixes inbox shows a Jira badge with the issue key (e.g. PROJ-123) and a status dot. A feedback item can be linked to Jira, GitHub, Linear, Trello, any combination, or none.",
   },
 ];
 
@@ -25,13 +27,13 @@ export function JiraCapabilitiesSection() {
     <section className="w-full py-16 md:py-24">
       <div className="container mx-auto px-4">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
+          <p className="mb-3 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
             Built for Jira admins
           </p>
           <h2 className="text-3xl font-bold md:text-4xl">
             Status sync built for custom Jira workflows
           </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
+          <p className="mt-4 text-lg text-muted-foreground">
             Most feedback tools sync a status name, and break the first time an
             admin renames one. Faster Fixes syncs the category instead.
           </p>
@@ -49,6 +51,18 @@ export function JiraCapabilitiesSection() {
             </Card>
           ))}
         </div>
+
+        <p className="mx-auto mt-10 max-w-2xl text-center text-muted-foreground">
+          Client-facing work tracked on a board? The{" "}
+          <Link
+            href={"/integrations/trello" as Route}
+            className="text-foreground underline underline-offset-4 hover:no-underline"
+          >
+            Trello integration
+          </Link>{" "}
+          mirrors the same feedback as a card, and its status stays in sync with
+          the Jira issue.
+        </p>
       </div>
     </section>
   );

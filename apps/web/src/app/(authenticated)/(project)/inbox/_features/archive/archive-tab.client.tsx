@@ -1,21 +1,30 @@
 "use client";
 
-import { useActiveProject } from "@/app/_features/project/active-project-provider.client";
-import { DataTable } from "@/app/_features/core/datatable/data-table";
-import { DataTableColumnHeader } from "@/app/_features/core/datatable/data-table-column-header";
+import { DataTable } from "@/app/_components/data-table.client";
+import { DataTableColumnHeader } from "@/app/_components/data-table-column-header.client";
+import { VideoSourceLine } from "@/app/_domains/video/_components/video-source-line";
 import { useTRPC } from "@/lib/trpc/trpc-client";
-import { resolveS3Url } from "@/server/storage/resolve-s3-url";
+import { resolveS3Url } from "@/utils/url/resolve-s3-url";
 import { matchQueryStatus } from "@/utils/tanstack-query/match-query-status";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@workspace/ui/components/avatar";
+import { Checkbox } from "@workspace/ui/components/checkbox";
 import { Skeleton } from "@workspace/ui/components/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { AlertCircle } from "lucide-react";
 import * as React from "react";
-import { toast } from "sonner";
-import type { GetArchivedFeedbackOutput } from "./get-archived-feedback.trpc.query";
-import { HardDeleteDialog } from "./hard-delete-dialog.client";
+import { getPageAfterRemoval } from "../../_helpers/archive-deletion";
+import type { ListArchivedFeedbackOutput } from "../../_services/list-archived-feedback";
+import { ColumnSelectCheckbox } from "../kanban/column-select-checkbox.client";
+import { ArchiveSelectionToolbar } from "./archive-selection-toolbar.client";
+import { ArchivedFeedbackActionsDropdown } from "./archived-feedback-actions-dropdown.client";
+import { useDeleteArchivedFeedback } from "./use-delete-archived-feedback";
+import { useRestoreArchivedFeedback } from "./use-restore-archived-feedback";
 import {
   Empty,
   EmptyDescription,
@@ -25,138 +34,225 @@ import {
 } from "@workspace/ui/components/empty";
 import { Archive } from "lucide-react";
 
-type ArchivedItem = GetArchivedFeedbackOutput["items"][number];
+type ArchivedItem = ListArchivedFeedbackOutput["items"][number];
 
-export function ArchiveTab() {
-  const { activeProject } = useActiveProject();
-  const projectId = activeProject!.id;
+const PAGE_SIZE = 20;
+
+type ArchiveTabProps = {
+  projectId: string;
+};
+
+export function ArchiveTab({ projectId }: ArchiveTabProps) {
   const trpc = useTRPC();
-  const queryClient = useQueryClient();
   const [page, setPage] = React.useState(1);
   const [search, setSearch] = React.useState("");
-  const [sorting, setSorting] = React.useState<Array<{ id: string; desc: boolean }>>([]);
+  const [sorting, setSorting] = React.useState<
+    Array<{ id: string; desc: boolean }>
+  >([]);
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
-  const sortBy = sorting[0]?.id === "createdAt" ? "createdAt" as const : "updatedAt" as const;
-  const sortOrder = sorting[0]?.desc === false ? "asc" as const : "desc" as const;
+  // Selection covers the visible page only, so any change of view drops it
+  // rather than letting a delete reach rows that are no longer on screen.
+  const clearSelection = () =>
+    setSelectedIds((prev) => (prev.size === 0 ? prev : new Set()));
+
+  const changePage = (nextPage: number) => {
+    setPage(nextPage);
+    clearSelection();
+  };
+  const changeSearch = (nextSearch: string) => {
+    setSearch(nextSearch);
+    clearSelection();
+  };
+  const changeSorting = (nextSorting: Array<{ id: string; desc: boolean }>) => {
+    setSorting(nextSorting);
+    clearSelection();
+  };
+
+  const toggleSelected = (feedbackId: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(feedbackId)) {
+        next.delete(feedbackId);
+      } else {
+        next.add(feedbackId);
+      }
+      return next;
+    });
+
+  const togglePageSelected = (pageIds: string[]) =>
+    setSelectedIds((prev) =>
+      pageIds.every((id) => prev.has(id)) ? new Set() : new Set(pageIds),
+    );
+
+  const sortBy =
+    sorting[0]?.id === "createdAt"
+      ? ("createdAt" as const)
+      : ("updatedAt" as const);
+  const sortOrder =
+    sorting[0]?.desc === false ? ("asc" as const) : ("desc" as const);
 
   const archiveQuery = useQuery(
     trpc.authenticated.projects.feedback.listArchived.queryOptions({
       projectId,
       page,
-      pageSize: 20,
+      pageSize: PAGE_SIZE,
       search: search || undefined,
       sortBy,
       sortOrder,
     }),
   );
 
-  const hardDeleteMutation = useMutation(
-    trpc.authenticated.projects.feedback.hardDelete.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.authenticated.projects.feedback.listArchived.queryKey({ projectId }),
-        });
-        toast.success("Feedback deleted permanently.");
-      },
-      onError: () => {
-        toast.error("Failed to delete feedback.");
-      },
-    }),
-  );
+  const totalCount = archiveQuery.data?.totalCount;
 
-  const bulkHardDeleteMutation = useMutation(
-    trpc.authenticated.projects.feedback.bulkHardDelete.mutationOptions({
-      onSuccess: () => {
-        queryClient.invalidateQueries({
-          queryKey: trpc.authenticated.projects.feedback.listArchived.queryKey({ projectId }),
-        });
-        toast.success("Feedback deleted permanently.");
-      },
-      onError: () => {
-        toast.error("Failed to delete feedback.");
-      },
-    }),
-  );
+  // Deleted or restored, the rows leave the archive the same way.
+  const handleRemoved = (removed: number) => {
+    setSelectedIds(new Set());
+    if (totalCount !== undefined) {
+      setPage((current) =>
+        getPageAfterRemoval({
+          page: current,
+          pageSize: PAGE_SIZE,
+          totalCount,
+          removed,
+        }),
+      );
+    }
+  };
 
-  const columns: ColumnDef<ArchivedItem>[] = React.useMemo(
-    () => [
-      {
-        accessorKey: "comment",
-        header: "Comment",
-        cell: ({ row }) => (
-          <p className="max-w-[300px] truncate text-sm">{row.original.comment}</p>
-        ),
-      },
-      {
-        accessorKey: "pageUrl",
-        header: "Page URL",
-        cell: ({ row }) => {
-          try {
-            const url = new URL(row.original.pageUrl);
-            return (
-              <span className="text-muted-foreground text-xs">
-                {url.hostname + url.pathname.replace(/\/$/, "")}
-              </span>
-            );
-          } catch {
-            return <span className="text-muted-foreground text-xs">{row.original.pageUrl}</span>;
+  const deletion = useDeleteArchivedFeedback({
+    projectId,
+    onDeleted: handleRemoved,
+  });
+  const restoration = useRestoreArchivedFeedback({
+    projectId,
+    onRestored: handleRemoved,
+  });
+  const isPending = deletion.isPending || restoration.isPending;
+
+  const columns: ColumnDef<ArchivedItem>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <ColumnSelectCheckbox
+          columnTitle="feedback on this page"
+          itemIds={table.getRowModel().rows.map((row) => row.original.id)}
+          selectedIds={selectedIds}
+          onToggle={() =>
+            togglePageSelected(
+              table.getRowModel().rows.map((row) => row.original.id),
+            )
           }
-        },
-      },
-      {
-        accessorKey: "reviewer",
-        header: "Reviewer",
-        cell: ({ row }) => (
-          <span className="text-sm">{row.original.reviewer.name}</span>
-        ),
-      },
-      {
-        accessorKey: "assignee",
-        header: "Assignee",
-        cell: ({ row }) => {
-          const assignee = row.original.assignee;
-          if (!assignee) return <span className="text-muted-foreground text-xs">Unassigned</span>;
+          disabled={isPending}
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={selectedIds.has(row.original.id)}
+          onCheckedChange={() => toggleSelected(row.original.id)}
+          disabled={isPending}
+          aria-label="Select feedback"
+        />
+      ),
+    },
+    {
+      accessorKey: "comment",
+      header: "Comment",
+      cell: ({ row }) => (
+        <p className="max-w-[300px] truncate text-sm">{row.original.comment}</p>
+      ),
+    },
+    {
+      accessorKey: "pageUrl",
+      header: "Source",
+      cell: ({ row }) => {
+        const { pageUrl, videoTitle, startMs, endMs } = row.original;
+        if (videoTitle !== null) {
           return (
-            <div className="flex items-center gap-1.5">
-              <Avatar className="size-5">
-                <AvatarImage
-                  src={assignee.image ? resolveS3Url(assignee.image) : undefined}
-                  className="object-cover"
-                />
-                <AvatarFallback className="text-[10px]">
-                  {assignee.name?.charAt(0)?.toUpperCase() ?? "?"}
-                </AvatarFallback>
-              </Avatar>
-              <span className="text-sm">{assignee.name}</span>
-            </div>
+            <VideoSourceLine
+              className="max-w-[300px]"
+              title={videoTitle}
+              startMs={startMs}
+              endMs={endMs}
+            />
           );
-        },
+        }
+        if (!pageUrl) return null;
+        let displayUrl = pageUrl;
+        try {
+          const url = new URL(pageUrl);
+          displayUrl = url.hostname + url.pathname.replace(/\/$/, "");
+        } catch {
+          // Not a parseable URL: show it as stored
+        }
+        return (
+          <p
+            className="max-w-[300px] truncate text-xs text-muted-foreground"
+            title={pageUrl}
+          >
+            {displayUrl}
+          </p>
+        );
       },
-      {
-        accessorKey: "updatedAt",
-        header: ({ column }) => (
-          <DataTableColumnHeader column={column} title="Closed Date" />
-        ),
-        cell: ({ row }) => (
-          <span className="text-muted-foreground text-xs">
-            {formatDistanceToNow(new Date(row.original.updatedAt), { addSuffix: true })}
-          </span>
-        ),
+    },
+    {
+      accessorKey: "reviewer",
+      header: "Reviewer",
+      cell: ({ row }) => (
+        <span className="text-sm">{row.original.reviewer.name}</span>
+      ),
+    },
+    {
+      accessorKey: "assignee",
+      header: "Assignee",
+      cell: ({ row }) => {
+        const assignee = row.original.assignee;
+        if (!assignee) {
+          return (
+            <span className="text-xs text-muted-foreground">Unassigned</span>
+          );
+        }
+        return (
+          <div className="flex items-center gap-1.5">
+            <Avatar className="size-5">
+              <AvatarImage
+                src={assignee.image ? resolveS3Url(assignee.image) : undefined}
+                className="object-cover"
+              />
+              <AvatarFallback className="text-[10px]">
+                {assignee.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm">{assignee.name}</span>
+          </div>
+        );
       },
-      {
-        id: "actions",
-        header: "",
-        cell: ({ row }) => (
-          <HardDeleteDialog
-            count={1}
-            onConfirm={() => hardDeleteMutation.mutate({ feedbackId: row.original.id })}
-            disabled={hardDeleteMutation.isPending}
-          />
-        ),
-      },
-    ],
-    [hardDeleteMutation],
-  );
+    },
+    {
+      accessorKey: "updatedAt",
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Archived" />
+      ),
+      cell: ({ row }) => (
+        <span className="text-xs text-muted-foreground">
+          {formatDistanceToNow(new Date(row.original.updatedAt), {
+            addSuffix: true,
+          })}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: "",
+      cell: ({ row }) => (
+        <ArchivedFeedbackActionsDropdown
+          onRestore={() => restoration.restoreOne(row.original.id)}
+          onDelete={() => deletion.deleteOne(row.original.id)}
+          disabled={isPending}
+        />
+      ),
+    },
+  ];
 
   return matchQueryStatus(archiveQuery, {
     Loading: (
@@ -172,7 +268,9 @@ export function ArchiveTab() {
             <AlertCircle />
           </EmptyMedia>
           <EmptyTitle>Failed to load archive</EmptyTitle>
-          <EmptyDescription>Something went wrong. Please try again later.</EmptyDescription>
+          <EmptyDescription>
+            Something went wrong. Please try again later.
+          </EmptyDescription>
         </EmptyHeader>
       </Empty>
     ),
@@ -195,12 +293,24 @@ export function ArchiveTab() {
         data={data.items}
         pageCount={data.pageCount || 1}
         currentPage={page}
-        setCurrentPage={setPage}
+        setCurrentPage={changePage}
         search={search}
-        setSearch={setSearch}
+        setSearch={changeSearch}
         searchInputPlaceholder="Search by comment..."
         isLoading={archiveQuery.isFetching}
-        onSortingChange={setSorting}
+        onSortingChange={changeSorting}
+        selectionActions={
+          selectedIds.size > 0 && (
+            <ArchiveSelectionToolbar
+              selectedCount={selectedIds.size}
+              pageItemCount={data.items.length}
+              onRestore={() => restoration.restoreMany(Array.from(selectedIds))}
+              onDelete={() => deletion.deleteMany(Array.from(selectedIds))}
+              onClearSelection={clearSelection}
+              disabled={isPending}
+            />
+          )
+        }
       />
     ),
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActiveProject } from "@/app/_features/project/active-project-provider.client";
+import { useActiveProject } from "@/app/_domains/project/active-project/active-project-provider.client";
 import { useTRPC } from "@/lib/trpc/trpc-client";
 import { matchQueryStatus } from "@/utils/tanstack-query/match-query-status";
 import { useQuery } from "@tanstack/react-query";
@@ -18,9 +18,17 @@ import {
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
-import { AlertCircle, Archive, Inbox } from "lucide-react";
-import { parseAsString, useQueryState } from "nuqs";
+import { AlertCircle, Archive, Inbox, SquareKanban } from "lucide-react";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import * as React from "react";
+import {
+  BOARD_SORTS,
+  DEFAULT_BOARD_SORT,
+} from "../_helpers/board-column-order";
+import {
+  parseBoardSource,
+  serializeBoardSource,
+} from "../_helpers/board-source";
 import { ArchiveTab } from "./archive/archive-tab.client";
 import { FeedbackDetailPanel } from "./feedback-panel/feedback-detail-panel.client";
 import { FeedbackFilters } from "./filters/feedback-filters.client";
@@ -28,29 +36,30 @@ import { KanbanBoard } from "./kanban/kanban-board.client";
 
 export function InboxTabs() {
   const { activeProject } = useActiveProject();
-  const projectId = activeProject!.id;
+  if (!activeProject) {
+    throw new Error("InboxTabs must render under an active Project.");
+  }
+  const projectId = activeProject.id;
   const trpc = useTRPC();
 
   const [view, setView] = useQueryState(
     "view",
     parseAsString.withDefault("board"),
   );
-  const [pageUrlFilter, setPageUrlFilter] = useQueryState("pageUrl");
+  const [sourceParam, setSourceParam] = useQueryState("source");
+  const source = React.useMemo(
+    () => parseBoardSource(sourceParam),
+    [sourceParam],
+  );
   const [sort, setSort] = useQueryState(
     "sort",
-    parseAsString.withDefault("newest"),
+    parseAsStringLiteral(BOARD_SORTS).withDefault(DEFAULT_BOARD_SORT),
   );
   const [selectedFeedbackId, setSelectedFeedbackId] =
     useQueryState("feedbackId");
 
   const feedbackQuery = useQuery(
     trpc.authenticated.projects.feedback.list.queryOptions({ projectId }),
-  );
-
-  const pageUrlsQuery = useQuery(
-    trpc.authenticated.projects.feedback.distinctPageUrls.queryOptions({
-      projectId,
-    }),
   );
 
   const gitHubLinkQuery = useQuery(
@@ -65,6 +74,12 @@ export function InboxTabs() {
     trpc.authenticated.projects.jira.getLink.queryOptions({ projectId }),
   );
 
+  const trelloLinkQuery = useQuery(
+    trpc.authenticated.projects.trello.getStoredLink.queryOptions({
+      projectId,
+    }),
+  );
+
   const selectedFeedback = React.useMemo(
     () => feedbackQuery.data?.find((f) => f.id === selectedFeedbackId) ?? null,
     [feedbackQuery.data, selectedFeedbackId],
@@ -76,7 +91,7 @@ export function InboxTabs() {
         <div className="flex flex-wrap items-center justify-between gap-2">
           <TabsList>
             <TabsTrigger value="board">
-              <Inbox className="mr-1.5 size-4" />
+              <SquareKanban className="mr-1.5 size-4" />
               Board
             </TabsTrigger>
             <TabsTrigger value="archive">
@@ -87,9 +102,11 @@ export function InboxTabs() {
 
           {view === "board" && (
             <FeedbackFilters
-              pageUrls={pageUrlsQuery.data ?? []}
-              selectedPageUrl={pageUrlFilter}
-              onPageUrlChange={setPageUrlFilter}
+              projectId={projectId}
+              source={source}
+              onSourceChange={(next) =>
+                void setSourceParam(serializeBoardSource(next))
+              }
               sort={sort}
               onSortChange={setSort}
             />
@@ -146,7 +163,7 @@ export function InboxTabs() {
             Success: ({ data: feedback }) => (
               <KanbanBoard
                 feedback={feedback}
-                pageUrlFilter={pageUrlFilter}
+                source={source}
                 sort={sort}
                 onSelectFeedback={(id) => setSelectedFeedbackId(id)}
               />
@@ -155,7 +172,7 @@ export function InboxTabs() {
         </TabsContent>
 
         <TabsContent value="archive" className="mt-4">
-          <ArchiveTab />
+          <ArchiveTab projectId={projectId} />
         </TabsContent>
       </Tabs>
 
@@ -163,12 +180,13 @@ export function InboxTabs() {
         feedback={selectedFeedback}
         open={!!selectedFeedbackId}
         onOpenChange={(open) => {
-          if (!open) setSelectedFeedbackId(null);
+          if (!open) void setSelectedFeedbackId(null);
         }}
         projectId={projectId}
         hasGitHubLink={!!gitHubLinkQuery.data}
         hasLinearLink={!!linearLinkQuery.data}
         hasJiraLink={!!jiraLinkQuery.data}
+        hasTrelloLink={!!trelloLinkQuery.data}
       />
     </div>
   );

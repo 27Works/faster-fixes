@@ -57,6 +57,23 @@ export type DiagnosticTrail = {
   network: NetworkEntry[];
 };
 
+export type CustomMetadataValue = string | number | boolean | null;
+
+// Flat key/value pairs the host site declares; see normalizeCustomMetadata for
+// the limits the Widget and the server both apply.
+export type CustomMetadata = Record<string, CustomMetadataValue>;
+
+/**
+ * Where the Selection sat in the Reviewer's viewport when they made it, in
+ * viewport CSS pixels. Stored under the `selection` key of the Feedback
+ * metadata so the inbox can draw the Selection frame over the Screenshot.
+ */
+export type SelectionGeometry = {
+  viewport: { width: number; height: number };
+  element: { left: number; top: number; width: number; height: number };
+  click: { x: number; y: number };
+};
+
 export type CreateFeedbackData = {
   comment: string;
   pageUrl: string;
@@ -70,6 +87,16 @@ export type CreateFeedbackData = {
   viewportHeight?: number;
   metadata?: Record<string, unknown>;
   diagnosticTrail?: DiagnosticTrail;
+  customMetadata?: CustomMetadata;
+  /** Declares that a Recording upload follows the creation. */
+  recordingFollows?: boolean;
+};
+
+/** What travels with a Recording file, beside the gzip body itself. */
+export type RecordingDetails = {
+  durationMs: number;
+  /** The replay format version the Widget wrote the events in. */
+  formatVersion: number;
 };
 
 export type UpdateFeedbackData = {
@@ -95,7 +122,7 @@ export type ApiErrorResponse = {
  * alternative implementations can target localStorage, in-memory state,
  * or a mock for tests.
  */
-export interface FeedbackClient {
+export type FeedbackClient = {
   getConfig(): Promise<WidgetConfig>;
   getFeedback(
     reviewerToken: string,
@@ -117,4 +144,14 @@ export interface FeedbackClient {
     screenshot: Blob,
     reviewerToken: string,
   ): Promise<void>;
-}
+  /**
+   * Optional so a client injected before Recording existed keeps working: the
+   * Widget attaches no Recording when it is absent.
+   */
+  attachRecording?(
+    feedbackId: string,
+    recording: Blob,
+    details: RecordingDetails,
+    reviewerToken: string,
+  ): Promise<void>;
+};

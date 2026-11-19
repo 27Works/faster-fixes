@@ -1,19 +1,18 @@
 import "server-only";
 
 import { createMailer } from "./mailer-factory";
+import type { Mailer } from "./types";
 
-export const mailer = createMailer();
+let instance: Mailer | undefined;
+const getMailer = () => (instance ??= createMailer());
 
-// Re-export types for convenience
-export type {
-  AddContactToSegmentOptions,
-  Contact,
-  CreateContactOptions,
-  EmailAttachment,
-  EmailResponse,
-  Mailer,
-  MailOptions,
-  UpdateContactOptions,
-} from "./types";
+export const mailer: Mailer = {
+  get emails() {
+    return getMailer().emails;
+  },
+  get contacts() {
+    return getMailer().contacts;
+  },
+};
 
-export { EmailError } from "./types";
+export type { Mailer } from "./types";

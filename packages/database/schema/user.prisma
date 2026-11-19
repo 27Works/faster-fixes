@@ -22,8 +22,12 @@ model User {
   members     Member[]
   invitations Invitation[]
 
+  testimonialRequest TestimonialRequest?
+  testimonials       Testimonial[]
+
   // Asset relations
   uploadedAssets Asset[] @relation("AssetUploader")
+  uploadedVideos Video[] @relation("VideoUploader")
 
   @@unique([email])
   @@map("user")

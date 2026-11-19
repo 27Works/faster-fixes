@@ -1,21 +1,18 @@
 import { APP_URL } from "@/app/_constants/app";
 import { SITE_NAME } from "@/app/_constants/seo";
-import { BreadcrumbSchema } from "@/app/_features/seo/breadcrumb-schema";
-import { FaqSchema } from "@/app/_features/seo/faq-schema";
-import { HowToSchema } from "@/app/_features/seo/how-to-schema";
-import { SoftwareApplicationSchema } from "@/app/_features/seo/software-application-schema";
-import { WebPageSchema } from "@/app/_features/seo/web-page-schema";
+import { BreadcrumbSchema } from "@/app/_components/seo/breadcrumb-schema";
+import { FaqSchema } from "@/app/_components/seo/faq-schema";
+import { HowToSchema } from "@/app/_components/seo/how-to-schema";
+import { SoftwareApplicationSchema } from "@/app/(public)/_components/seo/software-application-schema";
+import { WebPageSchema } from "@/app/_components/seo/web-page-schema";
+import { buildSocialMetadata } from "@/app/(public)/_helpers/build-social-metadata";
 import type { Metadata } from "next";
 import { UserbackAlternativesSection } from "./_features/userback-alternatives-section";
-import { UserbackBreadcrumb } from "./_features/userback-breadcrumb";
 import { UserbackCalculatorSection } from "./_features/userback-calculator-section";
 import { UserbackComparisonSection } from "./_features/userback-comparison-section";
 import { UserbackCtaSection } from "./_features/userback-cta-section";
 import { UserbackDeveloperFirstSection } from "./_features/userback-developer-first-section";
-import {
-  UserbackFaqSection,
-  userbackFaqs,
-} from "./_features/userback-faq-section";
+import { userbackFaqs } from "./_features/userback-faqs";
 import { UserbackFitSection } from "./_features/userback-fit-section";
 import { UserbackHero } from "./_features/userback-hero";
 import { UserbackHonestTakeSection } from "./_features/userback-honest-take-section";
@@ -27,13 +24,14 @@ import { UserbackPricingSection } from "./_features/userback-pricing-section";
 import { UserbackWhatIsSection } from "./_features/userback-what-is-section";
 import { UserbackWhySwitchSection } from "./_features/userback-why-switch-section";
 import { VsCrossLinks } from "../_features/vs-cross-links";
+import { VsFaqSection } from "../_features/vs-faq-section";
 
 const pageUrl = `${APP_URL}/vs/userback`;
-const title = `Userback Alternative — Open-Source & Self-Hosted | ${SITE_NAME}`;
+const title = `Userback Alternative: Open-Source & Self-Hosted | ${SITE_NAME}`;
 const description =
-  "Open-source, self-hostable, and flat-priced. FasterFixes gives dev teams structured bug reports with React component tree capture and an MCP server for AI coding agents — without per-seat pricing or vendor lock-in.";
+  "Open-source, self-hostable, and flat-priced. FasterFixes gives dev teams structured bug reports with React component tree capture and an MCP server for AI coding agents, without per-seat pricing or vendor lock-in.";
 const datePublished = "2026-04-29T00:00:00.000Z";
-const dateModified = "2026-04-29T00:00:00.000Z";
+const dateModified = "2026-11-12T00:00:00.000Z";
 
 export const metadata: Metadata = {
   title: {
@@ -55,22 +53,16 @@ export const metadata: Metadata = {
   alternates: {
     canonical: pageUrl,
   },
-  openGraph: {
+  ...buildSocialMetadata({
+    path: "/vs/userback",
     title,
     description,
-    url: pageUrl,
-    type: "website",
-  },
-  twitter: {
-    title,
-    description,
-  },
+  }),
 };
 
 export default function Page() {
   return (
     <div>
-      <UserbackBreadcrumb />
       <UserbackHero />
       <UserbackWhatIsSection />
       <UserbackWhySwitchSection />
@@ -82,7 +74,7 @@ export default function Page() {
       <UserbackComparisonSection />
       <UserbackPricingSection />
       <UserbackMigrationSection />
-      <UserbackFaqSection />
+      <VsFaqSection faqs={userbackFaqs} />
       <UserbackCtaSection />
       <VsCrossLinks currentSlug="userback" />
 

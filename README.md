@@ -15,7 +15,15 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/@fasterfixes/widget"><img src="https://img.shields.io/npm/v/@fasterfixes/widget?label=%40fasterfixes%2Fwidget&color=0a0a0a" alt="@fasterfixes/widget on npm" /></a>
+  &nbsp;
   <a href="https://www.npmjs.com/package/@fasterfixes/react"><img src="https://img.shields.io/npm/v/@fasterfixes/react?label=%40fasterfixes%2Freact&color=0a0a0a" alt="@fasterfixes/react on npm" /></a>
+  &nbsp;
+  <a href="https://www.npmjs.com/package/@fasterfixes/vue"><img src="https://img.shields.io/npm/v/@fasterfixes/vue?label=%40fasterfixes%2Fvue&color=0a0a0a" alt="@fasterfixes/vue on npm" /></a>
+  &nbsp;
+  <a href="https://www.npmjs.com/package/@fasterfixes/angular"><img src="https://img.shields.io/npm/v/@fasterfixes/angular?label=%40fasterfixes%2Fangular&color=0a0a0a" alt="@fasterfixes/angular on npm" /></a>
+  &nbsp;
+  <a href="https://www.npmjs.com/package/@fasterfixes/svelte"><img src="https://img.shields.io/npm/v/@fasterfixes/svelte?label=%40fasterfixes%2Fsvelte&color=0a0a0a" alt="@fasterfixes/svelte on npm" /></a>
   &nbsp;
   <a href="https://www.npmjs.com/package/@fasterfixes/mcp"><img src="https://img.shields.io/npm/v/@fasterfixes/mcp?label=%40fasterfixes%2Fmcp&color=0a0a0a" alt="@fasterfixes/mcp on npm" /></a>
   &nbsp;
@@ -28,7 +36,7 @@
 
 During the review phase of a web project, clients send feedback through WhatsApp messages, scattered screenshots, and vague descriptions with no link to the page. Developers then spend time deciphering what was meant, finding the right page, and turning it into something actionable.
 
-Faster Fixes replaces that workflow. Clients leave feedback directly on the website through a lightweight widget. The system captures the full context automatically — screenshot, page URL, DOM selector, browser metadata, and React component tree when available. Developers consume that feedback from a dashboard or directly from their AI coding agent via MCP.
+Faster Fixes replaces that workflow. Clients leave feedback directly on the website through a lightweight widget. The system captures the full context automatically: screenshot, a Recording of the moments leading up to the feedback, page URL, DOM selector, browser metadata, and React component tree when available. Developers consume that feedback from a dashboard or directly from their AI coding agent via MCP.
 
 The goal is a short path from client comment to resolved fix:
 
@@ -38,19 +46,61 @@ The goal is a short path from client comment to resolved fix:
 
 ### 1. Collect feedback with the widget
 
-Install the React widget in your application. Clients click anywhere on the page to leave feedback. The widget captures the screenshot, element selector, component tree, and browser info automatically — no setup required from the client.
+Add the widget to any website: WordPress, Webflow, static HTML, or an app built with any framework. Paste one tag, replacing the Project ID with your own:
+
+```html
+<script
+  src="https://cdn.jsdelivr.net/npm/@fasterfixes/widget@1/dist/widget.iife.js"
+  data-project-id="proj_your_project_id"
+  defer
+></script>
+```
+
+In a React application, use the React embed instead. It mounts the same widget:
 
 ```tsx
 import { FeedbackProvider } from "@fasterfixes/react";
 
 function App() {
   return (
-    <FeedbackProvider apiKey="your-project-api-key">
+    <FeedbackProvider projectId="proj_your_project_id">
       <YourApp />
     </FeedbackProvider>
   );
 }
 ```
+
+In a Vue or Nuxt application, use the Vue embed:
+
+```ts
+import { createFasterFixes } from "@fasterfixes/vue";
+
+createApp(App)
+  .use(createFasterFixes({ projectId: "proj_your_project_id" }))
+  .mount("#app");
+```
+
+In an Angular or Analog application, use the Angular embed:
+
+```ts
+import { provideFasterFixes } from "@fasterfixes/angular";
+
+export const appConfig: ApplicationConfig = {
+  providers: [provideFasterFixes({ projectId: "proj_your_project_id" })],
+};
+```
+
+In a Svelte or SvelteKit application, use the Svelte embed in the root component or layout:
+
+```svelte
+<script lang="ts">
+  import { initFasterFixes } from "@fasterfixes/svelte";
+
+  initFasterFixes({ projectId: "proj_your_project_id" });
+</script>
+```
+
+Clients click anywhere on the page to leave feedback. The widget captures the screenshot, element selector, browser info, and the React component tree on React sites automatically, with no setup required from the client. See the [script embed](https://faster-fixes.com/docs/widget/install/script-embed), [React](https://faster-fixes.com/docs/widget/install/react), [Vue](https://faster-fixes.com/docs/widget/install/vue), [Angular](https://faster-fixes.com/docs/widget/install/angular) and [Svelte](https://faster-fixes.com/docs/widget/install/svelte) docs.
 
 ### 2. Review feedback on the dashboard
 
@@ -73,6 +123,7 @@ The MCP server works with Claude Code, Cursor, VS Code, Windsurf, Codex, and Zed
 
 - **Visual feedback widget** — clients click on elements to leave feedback, no training needed
 - **Automatic context capture** — screenshot, page URL, DOM selector, component tree, browser info
+- **Recording**: the page content and the client's interactions over the last minute before each feedback, never the values typed into fields
 - **Developer dashboard** — organized view of all feedback across projects
 - **Markdown export** — copy any feedback item as a structured bug report for AI agents
 - **MCP server** — AI coding agents fetch and resolve feedback programmatically
@@ -83,13 +134,17 @@ The MCP server works with Claude Code, Cursor, VS Code, Windsurf, Codex, and Zed
 
 ## Packages
 
-This monorepo publishes three npm packages:
+This monorepo publishes seven npm packages:
 
-| Package                                                                  | Description                       | Install                          |
-| ------------------------------------------------------------------------ | --------------------------------- | -------------------------------- |
-| [`@fasterfixes/react`](https://www.npmjs.com/package/@fasterfixes/react) | React feedback widget             | `npm install @fasterfixes/react` |
-| [`@fasterfixes/core`](https://www.npmjs.com/package/@fasterfixes/core)   | Framework-agnostic client library | `npm install @fasterfixes/core`  |
-| [`@fasterfixes/mcp`](https://www.npmjs.com/package/@fasterfixes/mcp)     | MCP server for AI coding agents   | `npx -y @fasterfixes/mcp`        |
+| Package                                                                      | Description                       | Install                                         |
+| ---------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------------- |
+| [`@fasterfixes/widget`](https://www.npmjs.com/package/@fasterfixes/widget)   | Feedback widget for any website   | Script tag or `npm install @fasterfixes/widget` |
+| [`@fasterfixes/react`](https://www.npmjs.com/package/@fasterfixes/react)     | React embed of the widget         | `npm install @fasterfixes/react`                |
+| [`@fasterfixes/vue`](https://www.npmjs.com/package/@fasterfixes/vue)         | Vue embed of the widget           | `npm install @fasterfixes/vue`                  |
+| [`@fasterfixes/angular`](https://www.npmjs.com/package/@fasterfixes/angular) | Angular embed of the widget       | `npm install @fasterfixes/angular`              |
+| [`@fasterfixes/svelte`](https://www.npmjs.com/package/@fasterfixes/svelte)   | Svelte embed of the widget        | `npm install @fasterfixes/svelte`               |
+| [`@fasterfixes/core`](https://www.npmjs.com/package/@fasterfixes/core)       | Framework-agnostic client library | `npm install @fasterfixes/core`                 |
+| [`@fasterfixes/mcp`](https://www.npmjs.com/package/@fasterfixes/mcp)         | MCP server for AI coding agents   | `npx -y @fasterfixes/mcp`                       |
 
 ## MCP Setup
 
@@ -241,4 +296,4 @@ You can find your agent token and project ID in [Organization Settings](https://
 
 This repository is licensed under the [GNU AGPLv3 License](./LICENSE).
 
-The widget packages (`@fasterfixes/core`, `@fasterfixes/react`) and the MCP server (`@fasterfixes/mcp`) are licensed under MIT for unrestricted use in your applications.
+The widget packages (`@fasterfixes/widget`, `@fasterfixes/react`, `@fasterfixes/vue`, `@fasterfixes/angular`, `@fasterfixes/svelte`, `@fasterfixes/core`) and the MCP server (`@fasterfixes/mcp`) are licensed under MIT for unrestricted use in your applications.

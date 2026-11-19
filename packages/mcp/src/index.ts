@@ -3,7 +3,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { FasterFixesClient } from "./api-client";
 import { loadConfig } from "./config";
 import { registerCreateFeedbacks } from "./tools/create-feedbacks";
+import { registerGetFeedback } from "./tools/get-feedback";
 import { registerListFeedbacks } from "./tools/list-feedbacks";
+import { registerListVideos } from "./tools/list-videos";
 import { registerUpdateFeedbackStatus } from "./tools/update-feedback-status";
 
 const { token, project, baseUrl } = loadConfig();
@@ -15,6 +17,8 @@ const server = new McpServer({
 });
 
 registerListFeedbacks(server, client);
+registerGetFeedback(server, client);
+registerListVideos(server, client);
 registerCreateFeedbacks(server, client);
 registerUpdateFeedbackStatus(server, client);
 

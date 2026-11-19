@@ -1,24 +1,56 @@
 "use client";
 
-import { Separator } from "@workspace/ui/components/separator";
+import { SelectionMarker } from "@/app/_domains/video/_components/selection-marker";
+import { formatFeedbackTime } from "@/app/_domains/video/_helpers/format-timecode";
+import { mapSelectionToBox } from "@/app/_domains/video/_helpers/map-selection-to-box";
+import { readVideoSelection } from "@/app/_domains/video/_helpers/read-video-selection";
 import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetHeader,
   SheetTitle,
 } from "@workspace/ui/components/sheet";
-import { format, formatDistanceToNow } from "date-fns";
-import { ExternalLink, ImageOff } from "lucide-react";
-import type { GetFeedbackOutput } from "../get-feedback.trpc.query";
-import { AssigneeSelect } from "./assignee-select.client";
-import { CopyFeedbackMarkdown } from "./copy-feedback-markdown.client";
+import { cn } from "@workspace/ui/lib/utils";
+import { ImageOff } from "lucide-react";
+import { parseAsBoolean, useQueryState } from "nuqs";
+import {
+  getElementContext,
+  getFeedbackDetailSections,
+} from "../../_helpers/feedback-detail";
+import { getSelectionFrame } from "../../_helpers/selection-frame";
+import type { ListFeedbackOutput } from "../../_services/list-feedback";
+import { getFeedbackStatusAppearance } from "@/app/_domains/feedback/_components/feedback-status-appearance";
+import { ElementContextCard } from "./element-context-card.client";
+import { FeedbackPropertiesRail } from "./feedback-properties-rail.client";
+import { RecordingPlayer } from "./recording-player.client";
+import { RecordingRow } from "./recording-row.client";
 import { ScreenshotDialog } from "./screenshot-dialog.client";
-import { StatusSelect } from "./status-select.client";
-import { TrackersSection } from "./trackers-section.client";
-import { ViewDiagnosticsDialog } from "./view-diagnostics-dialog.client";
+import { SelectionFrameOverlay } from "./selection-frame-overlay";
 
-type FeedbackItem = GetFeedbackOutput[number];
+type FeedbackItem = ListFeedbackOutput[number];
+
+// The captured frame is shown at its own aspect ratio, so the image box is the
+// frame and the normalized Selection maps onto it as is.
+const UNIT_BOX = { width: 1, height: 1 };
+
+// Null when the Feedback marks nothing, so the switch is not offered.
+function renderScreenshotOverlay(feedback: FeedbackItem) {
+  if (feedback.videoId === null) {
+    const frame = getSelectionFrame(feedback.metadata);
+    return frame ? <SelectionFrameOverlay frame={frame} /> : null;
+  }
+
+  const geometry = mapSelectionToBox(
+    readVideoSelection(feedback),
+    UNIT_BOX,
+    UNIT_BOX,
+  );
+  return geometry ? (
+    <div aria-hidden className="pointer-events-none absolute inset-0">
+      <SelectionMarker geometry={geometry} />
+    </div>
+  ) : null;
+}
 
 type FeedbackDetailPanelProps = {
   feedback: FeedbackItem | null;
@@ -28,21 +60,8 @@ type FeedbackDetailPanelProps = {
   hasGitHubLink?: boolean;
   hasLinearLink?: boolean;
   hasJiraLink?: boolean;
+  hasTrelloLink?: boolean;
 };
-
-function formatBrowserMeta(f: FeedbackItem) {
-  const parts: string[] = [];
-  if (f.browserName) {
-    parts.push(
-      f.browserVersion ? `${f.browserName} ${f.browserVersion}` : f.browserName,
-    );
-  }
-  if (f.os) parts.push(f.os);
-  if (f.viewportWidth && f.viewportHeight) {
-    parts.push(`${f.viewportWidth}\u00d7${f.viewportHeight}`);
-  }
-  return parts.join(" \u00b7 ");
-}
 
 export function FeedbackDetailPanel({
   feedback,
@@ -52,176 +71,97 @@ export function FeedbackDetailPanel({
   hasGitHubLink = false,
   hasLinearLink = false,
   hasJiraLink = false,
+  hasTrelloLink = false,
 }: FeedbackDetailPanelProps) {
+  // Beside `feedbackId` in the address, so a link can land on the player.
+  const [isPlayerOpen, setIsPlayerOpen] = useQueryState(
+    "player",
+    parseAsBoolean.withDefault(false),
+  );
+
   if (!feedback) return null;
 
-  const browserMeta = formatBrowserMeta(feedback);
+  const element = getElementContext(feedback);
+  const sections = getFeedbackDetailSections(feedback);
+  const overlay = renderScreenshotOverlay(feedback);
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-lg">
-        <SheetHeader>
-          <SheetTitle className="sr-only">Feedback detail</SheetTitle>
-          <SheetDescription className="sr-only">
-            View and manage feedback details
-          </SheetDescription>
-        </SheetHeader>
+    <Sheet
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) void setIsPlayerOpen(null);
+        onOpenChange(next);
+      }}
+    >
+      <SheetContent className="gap-0 overflow-y-auto sm:max-w-3xl">
+        <SheetTitle className="sr-only">Feedback detail</SheetTitle>
+        <SheetDescription className="sr-only">
+          View and manage feedback details
+        </SheetDescription>
 
-        <div className="flex flex-col gap-6 p-4 pt-0">
-          {/* Page URL */}
-          <div className="flex items-center justify-between gap-2">
-            <a
-              href={feedback.pageUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary inline-flex min-w-0 items-center gap-1.5 text-sm font-medium hover:underline"
-            >
-              <span className="truncate">{feedback.pageUrl}</span>
-              <ExternalLink className="size-3.5 shrink-0" />
-            </a>
-            <CopyFeedbackMarkdown feedback={feedback} />
-          </div>
+        <div
+          className={cn(
+            "h-1 w-full shrink-0",
+            getFeedbackStatusAppearance(feedback.status).swatchClassName,
+          )}
+        />
 
-          {/* Comment */}
-          <div>
-            <h4 className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-              Comment
-            </h4>
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+        <div className="grid min-h-full md:grid-cols-[1fr_15rem]">
+          <div className="flex min-w-0 flex-col gap-5 p-5 pr-12 md:pr-5">
+            <p className="text-lg leading-snug font-semibold whitespace-pre-wrap">
               {feedback.comment}
             </p>
-          </div>
 
-          <Separator />
-
-          {/* Screenshot */}
-          <div>
-            <h4 className="text-muted-foreground mb-2 text-xs font-medium uppercase">
-              Screenshot
-            </h4>
             {feedback.screenshotUrl ? (
-              <div className="flex flex-col gap-2">
-                <ScreenshotDialog src={feedback.screenshotUrl} />
-                <div className="text-muted-foreground flex flex-col gap-0.5 text-xs">
-                  {feedback.clickX != null && feedback.clickY != null && (
-                    <span>
-                      Click: ({Math.round(feedback.clickX)},{" "}
-                      {Math.round(feedback.clickY)})
+              <ScreenshotDialog
+                src={feedback.screenshotUrl}
+                overlay={overlay}
+                badge={
+                  feedback.videoId !== null && feedback.startMs !== null ? (
+                    <span className="absolute top-2 left-2 rounded border bg-background/90 px-1.5 py-0.5 font-mono text-xs text-foreground tabular-nums">
+                      {formatFeedbackTime(feedback.startMs, feedback.endMs)}
                     </span>
-                  )}
-                  {feedback.selector && (
-                    <span>Selector: {feedback.selector}</span>
-                  )}
-                </div>
-              </div>
+                  ) : undefined
+                }
+              />
             ) : (
-              <div className="text-muted-foreground flex flex-col items-center gap-2 rounded-md border border-dashed py-8">
-                <ImageOff className="size-8 opacity-50" />
-                <span className="text-xs">No screenshot captured</span>
+              <div className="flex items-center justify-center gap-2 rounded-md border border-dashed py-6 text-xs text-muted-foreground">
+                <ImageOff className="size-4 opacity-50" />
+                No screenshot captured
               </div>
+            )}
+
+            {feedback.recording && (
+              <>
+                <RecordingRow
+                  feedbackId={feedback.id}
+                  durationMs={feedback.recording.durationMs}
+                  onPlay={() => void setIsPlayerOpen(true)}
+                />
+                <RecordingPlayer
+                  feedbackId={feedback.id}
+                  projectId={projectId}
+                  selectionFrame={getSelectionFrame(feedback.metadata)}
+                  open={isPlayerOpen}
+                  onOpenChange={(next) => void setIsPlayerOpen(next || null)}
+                />
+              </>
+            )}
+
+            {sections.elementContext && element.hasContext && (
+              <ElementContextCard element={element} />
             )}
           </div>
 
-          {/* Element context from metadata */}
-          {feedback.metadata &&
-            (() => {
-              const md = feedback.metadata as Record<string, unknown>;
-              const hasContext =
-                md.elementDescription ||
-                md.reactComponentPath ||
-                md.sourceFile;
-              if (!hasContext) return null;
-              return (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-                      Element
-                    </h4>
-                    <div className="flex flex-col gap-1 text-sm">
-                      {typeof md.elementDescription === "string" && (
-                        <p>{md.elementDescription}</p>
-                      )}
-                      {typeof md.reactComponentPath === "string" && (
-                        <p className="text-muted-foreground font-mono text-xs">
-                          {md.reactComponentPath}
-                        </p>
-                      )}
-                      {typeof md.sourceFile === "string" && (
-                        <p className="text-muted-foreground font-mono text-xs">
-                          {md.sourceFile}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </>
-              );
-            })()}
-
-          {/* Browser Metadata */}
-          {browserMeta && (
-            <>
-              <Separator />
-              <div>
-                <h4 className="text-muted-foreground mb-1 text-xs font-medium uppercase">
-                  Browser
-                </h4>
-                <p className="text-sm">{browserMeta}</p>
-              </div>
-            </>
-          )}
-
-          <Separator />
-
-          {/* Diagnostics */}
-          <div>
-            <h4 className="text-muted-foreground mb-2 text-xs font-medium uppercase">
-              Diagnostics
-            </h4>
-            <ViewDiagnosticsDialog
-              projectId={projectId}
-              feedbackId={feedback.id}
-            />
-          </div>
-
-          <Separator />
-
-          <StatusSelect
-            feedbackId={feedback.id}
-            value={feedback.status}
-          />
-
-          <TrackersSection
-            feedbackId={feedback.id}
+          <FeedbackPropertiesRail
+            feedback={feedback}
+            sections={sections}
             projectId={projectId}
             hasGitHubLink={hasGitHubLink}
             hasLinearLink={hasLinearLink}
             hasJiraLink={hasJiraLink}
-            githubIssueLink={feedback.issueLink}
-            linearIssueLink={feedback.linearIssueLink}
-            jiraIssueLink={feedback.jiraIssueLink}
+            hasTrelloLink={hasTrelloLink}
           />
-
-          <AssigneeSelect
-            feedbackId={feedback.id}
-            value={feedback.assignee?.id ?? null}
-          />
-
-          <Separator />
-
-          {/* Timestamps */}
-          <div className="text-muted-foreground flex flex-col gap-1 text-xs">
-            <span>
-              Submitted by {feedback.reviewer.name} on{" "}
-              {format(new Date(feedback.createdAt), "MMM d, yyyy")}
-            </span>
-            <span>
-              Last updated{" "}
-              {formatDistanceToNow(new Date(feedback.updatedAt), {
-                addSuffix: true,
-              })}
-            </span>
-          </div>
         </div>
       </SheetContent>
     </Sheet>

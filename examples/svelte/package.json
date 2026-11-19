@@ -1,0 +1,25 @@
+{
+  "name": "@workspace/example-svelte",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "prepare": "svelte-kit sync || echo ''",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --fail-on-warnings"
+  },
+  "dependencies": {
+    "@fasterfixes/svelte": "workspace:*"
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "^2.70.3",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@workspace/eslint-config": "workspace:*",
+    "eslint": "^9.39.1",
+    "svelte": "^5.57.1",
+    "svelte-check": "^4.7.6",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0"
+  }
+}

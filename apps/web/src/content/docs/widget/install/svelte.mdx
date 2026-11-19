@@ -1,0 +1,91 @@
+---
+title: Svelte
+description: Install and configure the Faster Fixes widget in your Svelte or SvelteKit application.
+---
+
+## Installation
+
+```package-install
+@fasterfixes/svelte
+```
+
+Requires Svelte 5.7 or later.
+
+## Setup
+
+Call `initFasterFixes` in the script of your root layout:
+
+```svelte title="src/routes/+layout.svelte"
+<script lang="ts">
+  import { initFasterFixes } from "@fasterfixes/svelte";
+
+  let { children } = $props();
+
+  initFasterFixes({ projectId: "proj_your_project_id" });
+</script>
+
+{@render children()}
+```
+
+Get your Project ID in [Project Settings](https://faster-fixes.com/settings). The widget only shows for Reviewers who opened your site through their review link. See [Reviewer Tokens](/docs/concepts/reviewer-tokens).
+
+Call `initFasterFixes` once, in a single root component, during its initialization: at the top level of its script, not in `onMount` or an event handler. The widget mounts for every component under that root and is removed when the root is destroyed. A second call under the same root is ignored.
+
+Any component under the root reads the widget with `getFeedback()`:
+
+```svelte title="src/lib/ControlBar.svelte"
+<script lang="ts">
+  import { getFeedback } from "@fasterfixes/svelte";
+
+  const feedback = getFeedback();
+</script>
+
+<button type="button" onclick={feedback.show}>Show widget</button>
+<output>Feedback: {feedback.feedbackItems.length}</output>
+```
+
+Read `isVisible`, `feedbackItems` and `showPins` from the returned object, as in `feedback.isVisible`. Do not destructure them: a destructured value is read once and no longer updates. See [Control the Widget](/docs/widget/control-the-widget).
+
+## Options
+
+| Option               | Type                                       | Required | Description                                                                                                                       |
+| -------------------- | ------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `projectId`          | `string`                                   | Yes      | Your Faster Fixes Project ID                                                                                                      |
+| `apiOrigin`          | `string`                                   | No       | API base URL. Defaults to `https://www.faster-fixes.com`                                                                          |
+| `color`              | `string`                                   | No       | Accent color. Any CSS color value. Defaults to `#02527E`                                                                          |
+| `position`           | `WidgetPosition`                           | No       | Floating button placement. Defaults to `bottom-right`. See [Position](/docs/widget/customization#position).                       |
+| `labels`             | `Partial<Labels>`                          | No       | Replaces any visible or announced string. See [Labels](/docs/widget/customization#labels).                                        |
+| `captureDiagnostics` | `boolean`                                  | No       | Records the console and network history leading to a report. Defaults to `true`                                                   |
+| `captureRecording`   | `boolean`                                  | No       | Keeps a Recording of the last minute on the page with each Feedback. Defaults to `true`. See [Recording](/docs/widget/recording). |
+| `customMetadata`     | `CustomMetadata \| (() => CustomMetadata)` | No       | Key/value pairs sent with every Feedback, such as a user ID. See [Custom metadata](/docs/widget/custom-metadata).                 |
+
+Options are read once, when the root component initializes. `WidgetOptions`, `Labels` and `WidgetPosition` are exported from `@fasterfixes/svelte`.
+
+### Theming
+
+`color` sets the accent. For finer control, override the `--ff-*` CSS custom properties or style the exposed parts with `::part()` in your global stylesheet. See [CSS custom properties](/docs/widget/customization#css-custom-properties) and [Parts](/docs/widget/customization#parts).
+
+## Where to mount
+
+### SvelteKit
+
+Call `initFasterFixes` in `src/routes/+layout.svelte`, as in [Setup](#setup). The root layout wraps every page and stays mounted across client-side navigation.
+
+Server rendering can stay on. On the server, `initFasterFixes` mounts nothing and `getFeedback()` returns the initial values: `isVisible` is `false`, `feedbackItems` is empty and `showPins` is `true`. The widget mounts in the browser only, outside your application's markup.
+
+### Svelte with Vite
+
+Call `initFasterFixes` in your root component:
+
+```svelte title="src/App.svelte"
+<script lang="ts">
+  import { initFasterFixes } from "@fasterfixes/svelte";
+
+  initFasterFixes({ projectId: "proj_your_project_id" });
+</script>
+```
+
+## Next steps
+
+- Build your own trigger or read the widget state in [Control the Widget](/docs/widget/control-the-widget).
+- Theme the widget and replace its strings in [Customization](/docs/widget/customization).

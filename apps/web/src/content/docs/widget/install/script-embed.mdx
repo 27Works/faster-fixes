@@ -1,0 +1,114 @@
+---
+title: Script Embed
+description: "Install the widget on any site: WordPress, Webflow, static HTML, or an app built with any framework."
+---
+
+## Installation
+
+### CDN
+
+Add this tag to the template shared by every page:
+
+```html
+<script
+  src="https://cdn.jsdelivr.net/npm/@fasterfixes/widget@1/dist/widget.iife.js"
+  data-project-id="proj_your_project_id"
+  defer
+></script>
+```
+
+Get your Project ID in [Project Settings](https://faster-fixes.com/settings). The widget only shows for Reviewers who opened your site through their review link. See [Reviewer Tokens](/docs/concepts/reviewer-tokens).
+
+On WordPress, use the theme header or a code snippets plugin. On Webflow, use **Site settings → Custom code**.
+
+### npm
+
+With a bundler, install the package and call `init`:
+
+```package-install
+@fasterfixes/widget
+```
+
+```ts
+import { init } from "@fasterfixes/widget";
+
+const widget = init({ projectId: "proj_your_project_id" });
+```
+
+## Options
+
+### Attributes
+
+The CDN tag reads its options from `data-*` attributes:
+
+| Attribute                  | Required | Description                                                                                                 |
+| -------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `data-project-id`          | Yes      | Your Project ID. Without it, the script loads but does not initialize the widget.                           |
+| `data-api-origin`          | No       | API base URL. Defaults to `https://www.faster-fixes.com`                                                    |
+| `data-color`               | No       | Accent color. Any CSS color value. Defaults to `#02527E`                                                    |
+| `data-position`            | No       | Floating button placement. Defaults to `bottom-right`. See [Position](/docs/widget/customization#position). |
+| `data-capture-diagnostics` | No       | Set to `"false"` to disable the Diagnostic Trail.                                                           |
+| `data-capture-recording`   | No       | Set to `"false"` to disable the Recording. See [Recording](/docs/widget/recording).                         |
+
+```html
+<script
+  src="https://cdn.jsdelivr.net/npm/@fasterfixes/widget@1/dist/widget.iife.js"
+  data-project-id="proj_your_project_id"
+  data-color="#7c3aed"
+  data-position="bottom-left"
+  defer
+></script>
+```
+
+To set `labels` or `customMetadata`, use [manual initialization](#manual-initialization).
+
+### Option object
+
+`init` accepts one option object:
+
+| Option               | Type                                       | Default                        | Description                                                                                                       |
+| -------------------- | ------------------------------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `projectId`          | `string`                                   | Required                       | Your Project ID, `proj_...`                                                                                       |
+| `apiOrigin`          | `string`                                   | `https://www.faster-fixes.com` | API base URL                                                                                                      |
+| `color`              | `string`                                   | `#02527E`                      | Accent color. Any CSS color value.                                                                                |
+| `position`           | `WidgetPosition`                           | `bottom-right`                 | Floating button placement                                                                                         |
+| `labels`             | `Partial<Labels>`                          | English defaults               | Replaces any visible or announced string. See [Labels](/docs/widget/customization#labels).                        |
+| `captureDiagnostics` | `boolean`                                  | `true`                         | Records the console and network history leading to a report                                                       |
+| `captureRecording`   | `boolean`                                  | `true`                         | Keeps a Recording of the last minute on the page with each Feedback. See [Recording](/docs/widget/recording).     |
+| `customMetadata`     | `CustomMetadata \| (() => CustomMetadata)` | None                           | Key/value pairs sent with every Feedback, such as a user ID. See [Custom metadata](/docs/widget/custom-metadata). |
+
+### Manual initialization
+
+Leave out `data-project-id` and call `window.FasterFixes.init` yourself:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/@fasterfixes/widget@1/dist/widget.iife.js"></script>
+<script>
+  window.FasterFixes.init({
+    projectId: "proj_your_project_id",
+    labels: { submitButton: "Send" },
+  });
+</script>
+```
+
+## Other frameworks
+
+For Vue or Nuxt, use the [Vue embed](/docs/widget/install/vue). For Angular or Analog, use the [Angular embed](/docs/widget/install/angular). For Svelte or SvelteKit, use the [Svelte embed](/docs/widget/install/svelte).
+
+In any other framework, load the script before your application bundle, without `data-project-id`. Initialize the widget when the root component mounts and destroy it when it unmounts. In Solid:
+
+```tsx title="Solid"
+import { onCleanup, onMount } from "solid-js";
+
+onMount(() => {
+  const widget = window.FasterFixes.init({ projectId: "proj_your_project_id" });
+  onCleanup(() => widget.destroy());
+});
+```
+
+More stacks, including Astro and Preact, are covered in [Other Frameworks](/docs/widget/install/other-frameworks).
+
+## Next steps
+
+- Drive the widget from your own controls in [Control the Widget](/docs/widget/control-the-widget).
+- Theme the widget and replace its strings in [Customization](/docs/widget/customization).

@@ -5,24 +5,31 @@ import { GithubIcon } from "@workspace/ui/components/icons/github-icon";
 import { ArrowRightIcon } from "lucide-react";
 import Link from "next/link";
 import { HeroDotBackground } from "../../../(home)/_features/hero/hero-dot-background.client";
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import {
+  formatAmount,
+  formatPrice,
+} from "../../../_helpers/format-competitor-price";
 
+const ruttlPro = COMPETITOR_PRICES.ruttl.plans.pro;
+const teamSize = 5;
+const ruttlTeamMonthly = ruttlPro.amount * teamSize;
 export function RuttlHero() {
   return (
     <HeroDotBackground>
       <section className="w-full py-20 md:py-24">
         <div className="container mx-auto max-w-3xl px-4 text-center">
-          <p className="text-muted-foreground mb-4 text-sm font-semibold tracking-wider uppercase">
-            Ruttl alternative
+          <p className="mb-4 text-sm font-semibold tracking-wider text-muted-foreground uppercase">
+            Ruttl alternatives
           </p>
           <h1 className="text-4xl leading-tight font-normal md:text-5xl lg:text-6xl">
-            The open-source Ruttl alternative built for developer teams
+            Ruttl alternatives: 8 tools compared for developer teams
           </h1>
-          <p className="text-muted-foreground mx-auto mt-6 max-w-2xl text-lg md:text-xl">
-            Ruttl charges $18 per user per month — a five-person team pays
-            $1,080 a year. FasterFixes is flat-rate: $20 a month hosted for up
-            to five members, or free if you self-host, with no per-seat math at
-            any scale. AGPL-3.0 licensed, with an MCP server so Claude Code and
-            Cursor can fix feedback from the terminal.
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
+            Ruttl charges {formatPrice(ruttlPro)}/user/mo, so a five-person team
+            pays {formatAmount(ruttlTeamMonthly, "USD")}/mo. Here are eight
+            alternatives, what each one charges, and the one you can run on your
+            own server for $0.
           </p>
 
           <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">

@@ -1,0 +1,22 @@
+import { deleteStorageObject } from "@/server/storage/objects";
+import { prisma } from "@workspace/db";
+
+export async function updateAvatar({ userId }: { userId: string }) {
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: userId },
+    select: { image: true },
+  });
+
+  // An absolute URL is an OAuth provider avatar, which lives outside the
+  // bucket and has nothing to delete.
+  if (user.image && !user.image.startsWith("http")) {
+    try {
+      await deleteStorageObject({ key: user.image });
+    } catch (error) {
+      console.error(
+        `Failed to delete old avatar from R2 (key=${user.image}):`,
+        error,
+      );
+    }
+  }
+}

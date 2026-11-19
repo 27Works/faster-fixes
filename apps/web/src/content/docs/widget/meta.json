@@ -1,5 +1,15 @@
 {
   "title": "Widget",
   "defaultOpen": true,
-  "pages": ["react", "customization", "use-feedback-hook", "other-frameworks"]
+  "pages": [
+    "overview",
+    "install",
+    "control-the-widget",
+    "custom-metadata",
+    "recording",
+    "customization",
+    "headless-client",
+    "content-security-policy",
+    "upgrading"
+  ]
 }

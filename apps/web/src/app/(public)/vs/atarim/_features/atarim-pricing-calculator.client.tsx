@@ -1,11 +1,27 @@
 "use client";
 
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
 import { Slider } from "@workspace/ui/components/slider";
 import { useState } from "react";
 
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import { formatPrice as formatCompetitorPrice } from "../../../_helpers/format-competitor-price";
+
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const agencyPrice = PLAN_PRICES[SubscriptionPlanName.Agency];
+
 const MAX_TEAM = 50;
 const MAX_PROJECTS = 50;
-const ATARIM_PRO_SEAT_PRICE = 25;
+const atarimPro = COMPETITOR_PRICES.atarim.plans.pro;
+// Atarim Pro is flat up to its seat and project caps, beyond both sliders.
+const ATARIM_PRO_MONTHLY_PRICE = atarimPro.amount;
+const ATARIM_PRO_ANNUAL_PRICE =
+  Math.round(atarimPro.billedYearlyAmount * 12 * 100) / 100;
 
 type PlanResult = {
   planLabel: string;
@@ -18,33 +34,50 @@ function pickFasterFixesPlan(team: number, projects: number): PlanResult {
   if (team <= 1 && projects <= 1) {
     return { planLabel: "Free", monthly: 0, annual: 0 };
   }
-  if (team <= 5 && projects <= 5) {
-    return { planLabel: "Pro", monthly: 20, annual: 240 };
+  if (team <= proPlan.seats && projects <= proPlan.projects) {
+    return { planLabel: "Pro", monthly: proPrice, annual: proPrice * 12 };
   }
-  return { planLabel: "Agency", monthly: 99, annual: 1188 };
+  return {
+    planLabel: "Agency",
+    monthly: agencyPrice,
+    annual: agencyPrice * 12,
+  };
 }
 
-function pickAtarimPlan(team: number): PlanResult {
-  const monthly = team * ATARIM_PRO_SEAT_PRICE;
-  return {
-    planLabel: team <= 5 ? "Pro" : "Business",
-    monthly,
-    annual: monthly * 12,
-  };
+const atarim: PlanResult = {
+  planLabel: `${atarimPro.name} · up to ${atarimPro.seats} seats`,
+  monthly: ATARIM_PRO_MONTHLY_PRICE,
+  annual: ATARIM_PRO_ANNUAL_PRICE,
+};
+
+function formatAmount(value: number): string {
+  const fractionDigits = Number.isInteger(value) ? 0 : 2;
+  return `$${value.toLocaleString("en-US", {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  })}`;
 }
 
 function formatPrice(value: number | null): string {
   if (value === null) return "Custom";
-  return `$${value.toLocaleString("en-US")}`;
+  return formatAmount(value);
 }
 
 function formatSavings(atarim: PlanResult, fasterFixes: PlanResult) {
   if (atarim.annual === null || fasterFixes.annual === null) {
-    return "Compare with FasterFixes Agency";
+    return null;
   }
   const diff = atarim.annual - fasterFixes.annual;
-  if (diff <= 0) return null;
-  return `Save $${diff.toLocaleString("en-US")} per year`;
+  if (diff > 0) {
+    return { saves: true, text: `Save ${formatAmount(diff)} per year` };
+  }
+  if (diff < 0) {
+    return {
+      saves: false,
+      text: `${formatAmount(-diff)} per year more than Atarim Pro`,
+    };
+  }
+  return null;
 }
 
 export function AtarimPricingCalculator() {
@@ -52,22 +85,21 @@ export function AtarimPricingCalculator() {
   const [projects, setProjects] = useState(3);
 
   const fasterFixesHosted = pickFasterFixesPlan(team, projects);
-  const atarim = pickAtarimPlan(team);
   const hostedSavings = formatSavings(atarim, fasterFixesHosted);
   const selfHostedSavings =
     atarim.annual !== null
-      ? `Save $${atarim.annual.toLocaleString("en-US")} per year`
+      ? `Save ${formatAmount(atarim.annual)} per year`
       : "Save the full Atarim subscription";
 
   return (
-    <div className="bg-background mx-auto mt-12 max-w-4xl rounded-xl border p-7">
+    <div className="mx-auto mt-12 max-w-4xl rounded-xl border bg-background p-7">
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <div>
           <div className="mb-3 flex items-baseline justify-between">
             <label htmlFor="team-slider" className="text-sm font-medium">
               Team members
             </label>
-            <span className="text-foreground text-lg font-semibold tabular-nums">
+            <span className="text-lg font-semibold text-foreground tabular-nums">
               {team}
             </span>
           </div>
@@ -87,7 +119,7 @@ export function AtarimPricingCalculator() {
             <label htmlFor="projects-slider" className="text-sm font-medium">
               Active projects
             </label>
-            <span className="text-foreground text-lg font-semibold tabular-nums">
+            <span className="text-lg font-semibold text-foreground tabular-nums">
               {projects}
             </span>
           </div>
@@ -105,66 +137,75 @@ export function AtarimPricingCalculator() {
 
       <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
         <div className="rounded-lg border p-5">
-          <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             Atarim
           </p>
           <p className="mt-1 text-sm">{atarim.planLabel}</p>
           <p className="mt-3 text-3xl font-bold tabular-nums">
             {formatPrice(atarim.monthly)}
             {atarim.monthly !== null && (
-              <span className="text-muted-foreground ml-1 text-sm font-normal">
+              <span className="ml-1 text-sm font-normal text-muted-foreground">
                 /mo
               </span>
             )}
           </p>
-          <p className="text-muted-foreground mt-1 text-sm tabular-nums">
+          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
             {atarim.annual !== null
-              ? `${formatPrice(atarim.annual)}/year`
+              ? `${formatPrice(atarim.annual)}/year billed yearly`
               : atarim.note}
           </p>
         </div>
 
-        <div className="border-foreground bg-muted/30 rounded-lg border p-5">
-          <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+        <div className="rounded-lg border border-foreground bg-muted/30 p-5">
+          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             FasterFixes hosted
           </p>
           <p className="mt-1 text-sm">{fasterFixesHosted.planLabel}</p>
           <p className="mt-3 text-3xl font-bold tabular-nums">
             {formatPrice(fasterFixesHosted.monthly)}
-            <span className="text-muted-foreground ml-1 text-sm font-normal">
+            <span className="ml-1 text-sm font-normal text-muted-foreground">
               /mo
             </span>
           </p>
-          <p className="text-muted-foreground mt-1 text-sm tabular-nums">
+          <p className="mt-1 text-sm text-muted-foreground tabular-nums">
             {formatPrice(fasterFixesHosted.annual)}/year
           </p>
           {hostedSavings && (
-            <p className="text-success mt-3 text-sm font-semibold">
-              {hostedSavings}
+            <p
+              className={`mt-3 text-sm font-semibold ${
+                hostedSavings.saves ? "text-success" : "text-muted-foreground"
+              }`}
+            >
+              {hostedSavings.text}
             </p>
           )}
         </div>
 
         <div className="rounded-lg border p-5">
-          <p className="text-muted-foreground text-xs font-semibold tracking-wider uppercase">
+          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
             FasterFixes self-hosted
           </p>
           <p className="mt-1 text-sm">Open source · AGPL-3.0</p>
           <p className="mt-3 text-3xl font-bold tabular-nums">$0</p>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <p className="mt-1 text-sm text-muted-foreground">
             Infrastructure costs only
           </p>
-          <p className="text-success mt-3 text-sm font-semibold">
+          <p className="mt-3 text-sm font-semibold text-success">
             {selfHostedSavings}
           </p>
         </div>
       </div>
 
-      <p className="text-muted-foreground mt-6 text-xs">
-        Comparison based on Atarim Pro at $25/seat/month (billed yearly) vs
-        FasterFixes Pro ($20/month flat for up to 5 members). Atarim&apos;s Pro
-        plan caps at 5 seats; teams larger than 5 are estimated on Business
-        ($35/seat/month). Check atarim.io/pricing for current rates.
+      <p className="mt-6 text-xs text-muted-foreground">
+        Comparison based on Atarim {atarimPro.name} at{" "}
+        {formatCompetitorPrice(atarimPro)}/month, or{" "}
+        {formatAmount(ATARIM_PRO_ANNUAL_PRICE)}/year billed yearly, flat for up
+        to {atarimPro.seats} seats and{" "}
+        {atarimPro.projects.toLocaleString("en-US")} projects, vs FasterFixes
+        Pro (${proPrice}/month for up to {proPlan.seats} members and{" "}
+        {proPlan.projects} projects) and Agency (${agencyPrice}/month,
+        unlimited). Atarim AI credits beyond the 5,000 included each month are
+        not counted. Check atarim.io/pricing for current rates.
       </p>
     </div>
   );

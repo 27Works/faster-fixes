@@ -1,12 +1,56 @@
 import { createMDX } from "fumadocs-mdx/next";
+import process from "node:process";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   transpilePackages: ["@workspace/ui"],
   typedRoutes: true,
+  env: {
+    // Without a public bucket or CDN URL, avatars and logos are read through
+    // the app's storage route, which works for every provider.
+    NEXT_PUBLIC_STORAGE_BASE_URL:
+      process.env.NEXT_PUBLIC_STORAGE_BASE_URL ||
+      `/api/storage/${
+        process.env.STORAGE_BUCKET_NAME ||
+        process.env.AWS_BUCKET_NAME ||
+        "uploads"
+      }`,
+  },
 
   experimental: {
+    agentUpgrade: "latest",
     authInterrupts: true,
+  },
+
+  async redirects() {
+    return [
+      {
+        source: "/docs/widget/other-frameworks",
+        destination: "/docs/widget/install/other-frameworks",
+        permanent: true,
+      },
+      {
+        source: "/docs/widget/react",
+        destination: "/docs/widget/install/react",
+        permanent: true,
+      },
+      {
+        source: "/docs/widget/script-embed",
+        destination: "/docs/widget/install/script-embed",
+        permanent: true,
+      },
+      {
+        // Social caches and shared links still point at the blog's former card route.
+        source: "/blog/:slug/og",
+        destination: "/og/blog/:slug",
+        permanent: true,
+      },
+      {
+        source: "/docs/widget/use-feedback-hook",
+        destination: "/docs/widget/control-the-widget",
+        permanent: true,
+      },
+    ];
   },
 
   async headers() {
@@ -22,6 +66,13 @@ const nextConfig = {
             key: "X-Frame-Options",
             value: "SAMEORIGIN",
           },
+        ],
+      },
+      {
+        // A header set here replaces the route's own, and the player document
+        // sends no referrer (ADR-0023).
+        source: "/:path((?!recording-player$).*)",
+        headers: [
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",

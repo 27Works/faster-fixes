@@ -1,0 +1,128 @@
+---
+title: React
+description: Install and configure the Faster Fixes widget in your React application.
+---
+
+## Installation
+
+```package-install
+@fasterfixes/react
+```
+
+Upgrading from 0.0.x? See [Upgrading](/docs/widget/upgrading#from-0-0-x).
+
+## Setup
+
+Wrap your application with `FeedbackProvider`:
+
+```tsx title="src/main.tsx"
+import { FeedbackProvider } from "@fasterfixes/react";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "./app";
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <FeedbackProvider projectId="proj_your_project_id">
+      <App />
+    </FeedbackProvider>
+  </StrictMode>,
+);
+```
+
+Get your Project ID in [Project Settings](https://faster-fixes.com/settings). The widget only shows for Reviewers who opened your site through their review link. See [Reviewer Tokens](/docs/concepts/reviewer-tokens).
+
+### Next.js App Router
+
+```tsx title="app/layout.tsx"
+import { FeedbackProvider } from "@fasterfixes/react";
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        <FeedbackProvider projectId="proj_your_project_id">
+          {children}
+        </FeedbackProvider>
+      </body>
+    </html>
+  );
+}
+```
+
+### Next.js Pages Router
+
+```tsx title="pages/_app.tsx"
+import { FeedbackProvider } from "@fasterfixes/react";
+import type { AppProps } from "next/app";
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <FeedbackProvider projectId="proj_your_project_id">
+      <Component {...pageProps} />
+    </FeedbackProvider>
+  );
+}
+```
+
+### Remix / React Router
+
+```tsx title="app/root.tsx"
+import { FeedbackProvider } from "@fasterfixes/react";
+import { Outlet } from "react-router";
+
+export default function App() {
+  return (
+    <FeedbackProvider projectId="proj_your_project_id">
+      <Outlet />
+    </FeedbackProvider>
+  );
+}
+```
+
+With Remix 2, import `Outlet` from `@remix-run/react`.
+
+### TanStack Start
+
+```tsx title="src/routes/__root.tsx"
+import { FeedbackProvider } from "@fasterfixes/react";
+import { HeadContent, Scripts } from "@tanstack/react-router";
+
+function RootDocument({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <FeedbackProvider projectId="proj_your_project_id">
+          {children}
+        </FeedbackProvider>
+        <Scripts />
+      </body>
+    </html>
+  );
+}
+```
+
+## Options
+
+| Prop                 | Type                                       | Required | Description                                                                                                                       |
+| -------------------- | ------------------------------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `projectId`          | `string`                                   | Yes      | Your Faster Fixes Project ID                                                                                                      |
+| `apiOrigin`          | `string`                                   | No       | API base URL. Defaults to `https://www.faster-fixes.com`                                                                          |
+| `color`              | `string`                                   | No       | Accent color. Any CSS color value. Defaults to `#02527E`                                                                          |
+| `position`           | `WidgetPosition`                           | No       | Floating button placement. Defaults to `bottom-right`. See [Position](/docs/widget/customization#position).                       |
+| `labels`             | `Partial<Labels>`                          | No       | Replaces any visible or announced string. See [Labels](/docs/widget/customization#labels).                                        |
+| `captureDiagnostics` | `boolean`                                  | No       | Records the console and network history leading to a report. Defaults to `true`                                                   |
+| `captureRecording`   | `boolean`                                  | No       | Keeps a Recording of the last minute on the page with each Feedback. Defaults to `true`. See [Recording](/docs/widget/recording). |
+| `customMetadata`     | `CustomMetadata \| (() => CustomMetadata)` | No       | Key/value pairs sent with every Feedback, such as a user ID. See [Custom metadata](/docs/widget/custom-metadata).                 |
+
+## Next steps
+
+- Build your own trigger or read the widget state in [Control the Widget](/docs/widget/control-the-widget).
+- Theme the widget and replace its strings in [Customization](/docs/widget/customization).

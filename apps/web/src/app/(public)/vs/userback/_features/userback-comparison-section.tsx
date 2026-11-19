@@ -1,8 +1,26 @@
-import { CheckIcon, MinusIcon, XIcon } from "lucide-react";
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
 
-type Cell = string | { type: "yes" | "no" | "partial"; note?: string };
+import { COMPETITOR_PRICES } from "../../../_helpers/competitor-prices";
+import { formatPrice } from "../../../_helpers/format-competitor-price";
+import {
+  type VsComparisonRow,
+  VsComparisonTable,
+} from "../../_features/vs-comparison-table";
+import { VsSection } from "../../_features/vs-section";
 
-const rows: { label: string; cells: [Cell, Cell] }[] = [
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const agencyPrice = PLAN_PRICES[SubscriptionPlanName.Agency];
+const { team, business, businessPlus } = COMPETITOR_PRICES.userback.plans;
+const { extraSeat } = COMPETITOR_PRICES.userback.otherPrices;
+
+const freeFeedbackLimit = PLAN_LIMITS[SubscriptionPlanName.Free].feedbacks;
+const freeProjectLimit = PLAN_LIMITS[SubscriptionPlanName.Free].projects;
+
+const rows: VsComparisonRow[] = [
   {
     label: "License",
     cells: ["AGPL-3.0 app · MIT widget", "Proprietary"],
@@ -21,22 +39,22 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Pricing model",
     cells: [
-      "Flat per-workspace · free, $20/mo, $99/mo",
-      "Per seat · Team $9, Business $19, Business Plus $29",
+      `Flat per-workspace · free, $${proPrice}/mo, $${agencyPrice}/mo`,
+      `Seat bundles · ${team.name} ${formatPrice(team)} (${team.seats} seats), ${business.name} ${formatPrice(business)} (${business.seats}), ${businessPlus.name} ${formatPrice(businessPlus)} (${businessPlus.seats}) · extra seats ${formatPrice(extraSeat)}/mo`,
     ],
   },
   {
     label: "Cost for a 5-person team",
     cells: [
-      "$0 self-host · $20/mo hosted Pro",
-      "$45/mo Team · $95/mo Business · $145/mo Business Plus",
+      `$0 self-host · $${proPrice}/mo hosted Pro`,
+      `${formatPrice(team)}/mo ${team.name} · ${formatPrice(business)}/mo ${business.name} · ${formatPrice(businessPlus)}/mo ${businessPlus.name}`,
     ],
   },
   {
     label: "Bring your own AI agent (MCP)",
     cells: [
       { type: "yes", note: "Claude Code, Cursor, Codex · any model" },
-      { type: "yes", note: "Claude, ChatGPT, Cursor" },
+      { type: "yes", note: "Claude, ChatGPT, Cursor · Team+" },
     ],
   },
   {
@@ -49,7 +67,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Stack support",
     cells: [
-      "React / Next.js native · basic HTML embed",
+      "Any stack · script tag or React package",
       "Framework-agnostic JS snippet",
     ],
   },
@@ -59,7 +77,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   },
   {
     label: "React component tree capture",
-    cells: [{ type: "yes" }, { type: "no" }],
+    cells: [{ type: "yes", note: "On React sites" }, { type: "no" }],
   },
   {
     label: "Auto context (URL, DOM, browser, viewport)",
@@ -69,12 +87,22 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     ],
   },
   {
-    label: "Video recording",
-    cells: [{ type: "no" }, { type: "yes", note: "Annotated · Business+" }],
+    label: "Screen recording",
+    cells: [{ type: "no" }, { type: "yes", note: "Annotated · all plans" }],
+  },
+  {
+    label: "Video review (uploaded videos)",
+    cells: [
+      { type: "yes", note: "Timestamped · area on the frame" },
+      { type: "no" },
+    ],
   },
   {
     label: "Session replay",
-    cells: [{ type: "no" }, { type: "yes", note: "Business+" }],
+    cells: [
+      { type: "yes", note: "Last minute before each feedback · all plans" },
+      { type: "yes", note: "Last 3 min before each report · Business+" },
+    ],
   },
   {
     label: "NPS / microsurveys",
@@ -82,7 +110,10 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   },
   {
     label: "Feature request portal",
-    cells: [{ type: "no" }, { type: "yes", note: "Add-on, +$39/mo" }],
+    cells: [
+      { type: "no" },
+      { type: "yes", note: "Team add-on · included on Business+" },
+    ],
   },
   {
     label: "Team kanban board",
@@ -91,8 +122,15 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Project management integrations",
     cells: [
-      "GitHub, Linear, Jira · more coming",
+      "GitHub, Linear, Jira, Trello · more coming",
       "Jira, ClickUp (2-way sync), Zapier, +",
+    ],
+  },
+  {
+    label: "Trello sync",
+    cells: [
+      { type: "yes", note: "Bidirectional · status follows the mapped lists" },
+      { type: "yes", note: "Sends feedback as cards" },
     ],
   },
   {
@@ -120,105 +158,34 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     label: "SSO",
     cells: [
       { type: "partial", note: "Roadmap" },
-      { type: "partial", note: "Business Plus, min 25 seats" },
+      { type: "partial", note: "Enterprise, custom pricing" },
     ],
   },
   {
     label: "Free plan",
     cells: [
-      { type: "yes", note: "1 project · 50 items · forever" },
-      { type: "yes", note: "2 seats · 2 projects · 7-day history" },
+      {
+        type: "yes",
+        note: `${freeProjectLimit} project · ${freeFeedbackLimit} items · forever`,
+      },
+      { type: "yes", note: "2 seats · 2 sites · 7-day history" },
     ],
   },
 ];
 
-const headers = ["FasterFixes", "Userback"] as const;
-
-function renderCell(cell: Cell) {
-  if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
-      ) : cell.type === "no" ? (
-        <XIcon className="text-destructive size-5" aria-label="No" />
-      ) : (
-        <MinusIcon
-          className="text-muted-foreground size-5"
-          aria-label="Partial"
-        />
-      )}
-      {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
-      )}
-    </div>
-  );
-}
-
 export function UserbackComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
-            Compare
-          </p>
-          <h2 className="text-3xl font-bold md:text-4xl">
-            FasterFixes vs Userback: full feature comparison
-          </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Side-by-side comparison based on each product&apos;s public
-            documentation and pricing page.
-          </p>
-        </div>
-
-        <div className="mx-auto mt-12 max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="p-4 text-left text-sm font-semibold" scope="col">
-                  Feature
-                </th>
-                {headers.map((h, i) => (
-                  <th
-                    key={h}
-                    scope="col"
-                    className={`p-4 text-left text-sm font-semibold ${
-                      i === 0 ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.label} className="border-b last:border-b-0">
-                  <th
-                    scope="row"
-                    className="p-4 text-left align-top text-sm font-medium"
-                  >
-                    {row.label}
-                  </th>
-                  {row.cells.map((cell, i) => (
-                    <td key={i} className="p-4 align-top">
-                      {renderCell(cell)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-center text-sm">
-          Pricing and feature availability as publicly listed on each
-          vendor&apos;s website. Last updated May 12, 2026.
-        </p>
-      </div>
-    </section>
+    <VsSection
+      eyebrow="Compare"
+      title="FasterFixes vs Userback: full feature comparison"
+      intro="Side-by-side comparison based on each product's public documentation and pricing page."
+      tone="muted"
+    >
+      <VsComparisonTable
+        competitorName="Userback"
+        rows={rows}
+        footnote="Pricing and feature availability as publicly listed on each vendor's website. Last updated Nov 12, 2026."
+      />
+    </VsSection>
   );
 }

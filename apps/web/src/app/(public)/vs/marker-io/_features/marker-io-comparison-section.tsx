@@ -1,8 +1,30 @@
-import { CheckIcon, MinusIcon, XIcon } from "lucide-react";
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
+import { COMPETITOR_PRICES } from "@/app/(public)/_helpers/competitor-prices";
+import { formatAmount } from "@/app/(public)/_helpers/format-competitor-price";
+import {
+  type VsComparisonRow,
+  VsComparisonTable,
+} from "../../_features/vs-comparison-table";
+import { VsSection } from "../../_features/vs-section";
 
-type Cell = string | { type: "yes" | "no" | "partial"; note?: string };
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
+const agencyPrice = PLAN_PRICES[SubscriptionPlanName.Agency];
 
-const rows: { label: string; cells: [Cell, Cell] }[] = [
+const { starter, team } = COMPETITOR_PRICES.markerIo.plans;
+const starterAnnual = formatAmount(
+  starter.billedYearlyAmount,
+  starter.currency,
+);
+const teamAnnual = formatAmount(team.billedYearlyAmount, team.currency);
+
+const freeFeedbackLimit = PLAN_LIMITS[SubscriptionPlanName.Free].feedbacks;
+const freeProjectLimit = PLAN_LIMITS[SubscriptionPlanName.Free].projects;
+
+const rows: VsComparisonRow[] = [
   {
     label: "License",
     cells: ["AGPL-3.0 app · MIT widget", "Proprietary"],
@@ -21,15 +43,15 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Pricing model",
     cells: [
-      "Flat per-workspace · free, $20/mo, $99/mo",
-      "Per-seat tiers · $39 Starter, $149 Team (annual)",
+      `Flat per-workspace · free, $${proPrice}/mo, $${agencyPrice}/mo`,
+      `Per-seat tiers · ${starterAnnual} Starter, ${teamAnnual} Team (annual)`,
     ],
   },
   {
     label: "Cost for a 5-person team",
     cells: [
-      "$0 self-host · $20/mo hosted Pro",
-      "$149/mo Team (annual · min for Jira & devtools)",
+      `$0 self-host · $${proPrice}/mo hosted Pro`,
+      `${teamAnnual}/mo Team (annual · min for Jira & devtools)`,
     ],
   },
   {
@@ -49,7 +71,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Stack support",
     cells: [
-      "React / Next.js native · more frameworks coming",
+      "Any stack · script tag or React package",
       "Any stack · JS snippet, browser extension, WordPress",
     ],
   },
@@ -59,7 +81,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   },
   {
     label: "React component tree capture",
-    cells: [{ type: "yes" }, { type: "no" }],
+    cells: [{ type: "yes", note: "On React sites" }, { type: "no" }],
   },
   {
     label: "Auto context (URL, DOM, browser, viewport)",
@@ -80,10 +102,17 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     ],
   },
   {
-    label: "Session replay / video feedback",
+    label: "Video review (uploaded videos)",
     cells: [
+      { type: "yes", note: "Timestamped · area on the frame" },
       { type: "no" },
-      { type: "partial", note: "Team plan and above" },
+    ],
+  },
+  {
+    label: "Session replay",
+    cells: [
+      { type: "yes", note: "Last minute before each feedback · all plans" },
+      { type: "yes", note: "Last 3 min before each report · Team+" },
     ],
   },
   {
@@ -105,13 +134,20 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     label: "Linear two-way sync",
     cells: [
       { type: "yes", note: "Bidirectional · workflow-state aware" },
-      { type: "yes", note: "Team plan and above" },
+      { type: "yes", note: "All plans" },
+    ],
+  },
+  {
+    label: "Trello sync",
+    cells: [
+      { type: "yes", note: "Bidirectional · status follows the mapped lists" },
+      { type: "partial", note: "Resolves when the card is Done in Trello" },
     ],
   },
   {
     label: "Project management integrations",
     cells: [
-      "GitHub, Linear, Jira · more coming",
+      "GitHub, Linear, Jira, Trello · more coming",
       "Jira, Linear, Asana, ClickUp, Trello, Monday.com, +",
     ],
   },
@@ -139,99 +175,27 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Free plan",
     cells: [
-      { type: "yes", note: "1 project · 50 items · forever" },
+      {
+        type: "yes",
+        note: `${freeProjectLimit} project · ${freeFeedbackLimit} items · forever`,
+      },
       { type: "partial", note: "15-day trial · no permanent free plan" },
     ],
   },
 ];
 
-const headers = ["FasterFixes", "Marker.io"] as const;
-
-function renderCell(cell: Cell) {
-  if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
-      ) : cell.type === "no" ? (
-        <XIcon className="text-destructive size-5" aria-label="No" />
-      ) : (
-        <MinusIcon
-          className="text-muted-foreground size-5"
-          aria-label="Partial"
-        />
-      )}
-      {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
-      )}
-    </div>
-  );
-}
-
 export function MarkerIoComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
-            Compare
-          </p>
-          <h2 className="text-3xl font-bold md:text-4xl">
-            FasterFixes vs. Marker.io
-          </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Side-by-side comparison based on each product&apos;s public
-            documentation and pricing page.
-          </p>
-        </div>
-
-        <div className="mx-auto mt-12 max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="p-4 text-left text-sm font-semibold" scope="col">
-                  Feature
-                </th>
-                {headers.map((h, i) => (
-                  <th
-                    key={h}
-                    scope="col"
-                    className={`p-4 text-left text-sm font-semibold ${
-                      i === 0 ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.label} className="border-b last:border-b-0">
-                  <th
-                    scope="row"
-                    className="p-4 text-left align-top text-sm font-medium"
-                  >
-                    {row.label}
-                  </th>
-                  {row.cells.map((cell, i) => (
-                    <td key={i} className="p-4 align-top">
-                      {renderCell(cell)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-center text-sm">
-          Pricing and feature availability as publicly listed on each
-          vendor&apos;s website. Last updated May 12, 2026.
-        </p>
-      </div>
-    </section>
+    <VsSection
+      eyebrow="Compare"
+      title="FasterFixes vs. Marker.io"
+      intro="Side-by-side comparison based on each product's public documentation and pricing page."
+    >
+      <VsComparisonTable
+        competitorName="Marker.io"
+        rows={rows}
+        footnote="Pricing and feature availability as publicly listed on each vendor's website. Last updated Nov 12, 2026."
+      />
+    </VsSection>
   );
 }

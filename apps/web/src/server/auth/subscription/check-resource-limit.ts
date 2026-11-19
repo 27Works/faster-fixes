@@ -1,9 +1,6 @@
-import type { LimitableResource } from "@/server/auth/config/subscription-plans";
-import type { PrismaClient } from "@workspace/db/generated/prisma/client";
-import {
-  getMinimumRequiredPlanForResource,
-  type PlanDenial,
-} from "./denial";
+import type { LimitableResource } from "@/app/_domains/subscription";
+import type { PrismaClient } from "@workspace/db/types";
+import { getMinimumRequiredPlanForResource, type PlanDenial } from "./denial";
 import { resolveOrganizationPlan } from "./resolve-organization-plan";
 
 export type ResourceCheckResult =
@@ -21,6 +18,9 @@ const RESOURCE_COUNT_QUERIES: Record<
     prisma.project.count({ where: { organizationId: orgId } }),
   feedbacks: (orgId, prisma) =>
     prisma.feedback.count({ where: { project: { organizationId: orgId } } }),
+  // Both states count: an `uploading` row already holds its place.
+  videos: (orgId, prisma) =>
+    prisma.video.count({ where: { project: { organizationId: orgId } } }),
   seats: (orgId, prisma) =>
     prisma.member.count({ where: { organizationId: orgId } }),
   organizations: () => {
@@ -34,13 +34,16 @@ export async function checkResourceLimit(
   prisma: PrismaClient,
 ): Promise<ResourceCheckResult> {
   const plan = await resolveOrganizationPlan(organizationId, prisma);
-  const limit = plan.limits[resource] as number;
+  const limit = plan.limits[resource];
 
   if (limit === Infinity) {
     return { allowed: true };
   }
 
-  const current = await RESOURCE_COUNT_QUERIES[resource](organizationId, prisma);
+  const current = await RESOURCE_COUNT_QUERIES[resource](
+    organizationId,
+    prisma,
+  );
 
   if (current < limit) {
     return { allowed: true };
@@ -55,7 +58,10 @@ export async function checkResourceLimit(
         current,
         limit,
         planName: plan.planName,
-        minimumRequiredPlan: getMinimumRequiredPlanForResource(resource, current),
+        minimumRequiredPlan: getMinimumRequiredPlanForResource(
+          resource,
+          current,
+        ),
       },
     },
   };

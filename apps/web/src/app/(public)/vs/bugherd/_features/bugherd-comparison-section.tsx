@@ -1,8 +1,21 @@
-import { CheckIcon, XIcon } from "lucide-react";
+import { PLAN_PRICES, SubscriptionPlanName } from "@/app/_domains/subscription";
+import { COMPETITOR_PRICES } from "@/app/(public)/_helpers/competitor-prices";
+import {
+  formatAmount,
+  formatPublishedPrice,
+} from "@/app/(public)/_helpers/format-competitor-price";
+import {
+  type VsComparisonRow,
+  VsComparisonTable,
+} from "../../_features/vs-comparison-table";
+import { VsSection } from "../../_features/vs-section";
 
-type Cell = string | { type: "yes" | "no"; note?: string };
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
 
-const rows: { label: string; cells: [Cell, Cell] }[] = [
+const { standard } = COMPETITOR_PRICES.bugherd.plans;
+const { extraSeat } = COMPETITOR_PRICES.bugherd.otherPrices;
+
+const rows: VsComparisonRow[] = [
   {
     label: "License",
     cells: ["AGPL-3.0 app · MIT widget", "Proprietary"],
@@ -19,12 +32,15 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     label: "Pricing model",
     cells: [
       "Free self-host · flat hosted plans",
-      "Per-seat tiers · $8/extra user/month",
+      `Per-seat tiers · ${formatPublishedPrice(extraSeat, "/extra user/month")} (monthly billing)`,
     ],
   },
   {
     label: "Cost for a 5-person team",
-    cells: ["$0 self-host · $20/mo hosted Pro", "$50/mo Standard"],
+    cells: [
+      `$0 self-host · $${proPrice}/mo hosted Pro`,
+      `${formatPublishedPrice(standard, "/mo")} Standard (${formatAmount(standard.billedYearlyAmount, standard.currency)}/mo annual)`,
+    ],
   },
   {
     label: "Bring your own AI agent (MCP)",
@@ -43,7 +59,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   {
     label: "Stack support",
     cells: [
-      "React / Next.js native · more frameworks coming",
+      "Any stack · script tag or React package",
       "Any stack · JS tag or Chrome extension",
     ],
   },
@@ -53,7 +69,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   },
   {
     label: "React component tree capture",
-    cells: [{ type: "yes" }, { type: "no" }],
+    cells: [{ type: "yes", note: "On React sites" }, { type: "no" }],
   },
   {
     label: "Auto context (screenshot, URL, DOM, browser)",
@@ -67,12 +83,29 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     label: "Client-facing task board",
     cells: [
       { type: "no", note: "On the roadmap" },
-      { type: "yes", note: "Premium plan only" },
+      { type: "yes", note: "Premium plan and above" },
     ],
   },
   {
-    label: "Video feedback",
-    cells: [{ type: "no" }, { type: "yes" }],
+    label: "Screen recording",
+    cells: [
+      { type: "no" },
+      { type: "yes", note: "Up to 1 minute · all plans" },
+    ],
+  },
+  {
+    label: "Video review (uploaded videos)",
+    cells: [
+      { type: "yes", note: "Timestamped · area on the frame" },
+      { type: "no" },
+    ],
+  },
+  {
+    label: "Session replay",
+    cells: [
+      { type: "yes", note: "Last minute before each feedback · all plans" },
+      { type: "no", note: "Links to LogRocket or FullStory sessions" },
+    ],
   },
   {
     label: "Feedback on Figma, PDFs, images",
@@ -86,14 +119,21 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     label: "Linear two-way sync",
     cells: [
       { type: "yes", note: "Bidirectional · workflow-state aware" },
-      { type: "yes" },
+      { type: "yes", note: "Premium plan and above" },
+    ],
+  },
+  {
+    label: "Trello sync",
+    cells: [
+      { type: "yes", note: "Bidirectional · status follows the mapped lists" },
+      { type: "yes", note: "All plans" },
     ],
   },
   {
     label: "Project management integrations",
     cells: [
-      "GitHub, Linear, Jira · more coming",
-      "Jira, Asana, ClickUp, Monday.com, Linear, +",
+      "GitHub, Linear, Jira, Trello · more coming",
+      "Trello, GitHub, Slack on all plans · Jira, Linear, Asana, ClickUp, Monday.com from Premium",
     ],
   },
   {
@@ -107,7 +147,7 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
     label: "Custom branding",
     cells: [
       "Self-host: full · hosted: planned",
-      { type: "yes", note: "Premium plan only" },
+      { type: "yes", note: "Premium plan and above" },
     ],
   },
   {
@@ -119,88 +159,18 @@ const rows: { label: string; cells: [Cell, Cell] }[] = [
   },
 ];
 
-const headers = ["FasterFixes", "BugHerd"] as const;
-
-function renderCell(cell: Cell) {
-  if (typeof cell === "string") {
-    return <span className="text-muted-foreground text-sm">{cell}</span>;
-  }
-  return (
-    <div className="flex flex-col gap-1">
-      {cell.type === "yes" ? (
-        <CheckIcon className="text-success size-5" aria-label="Yes" />
-      ) : (
-        <XIcon className="text-destructive size-5" aria-label="No" />
-      )}
-      {cell.note && (
-        <span className="text-muted-foreground text-xs">{cell.note}</span>
-      )}
-    </div>
-  );
-}
-
 export function BugherdComparisonSection() {
   return (
-    <section className="bg-muted/30 w-full border-y py-16 md:py-24">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-muted-foreground mb-3 text-sm font-semibold tracking-wider uppercase">
-            Compare
-          </p>
-          <h2 className="text-3xl font-bold md:text-4xl">
-            FasterFixes vs. BugHerd
-          </h2>
-          <p className="text-muted-foreground mt-4 text-lg">
-            Side-by-side comparison based on each product&apos;s public
-            documentation and pricing page.
-          </p>
-        </div>
-
-        <div className="mx-auto mt-12 max-w-4xl overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse">
-            <thead>
-              <tr className="border-b">
-                <th className="p-4 text-left text-sm font-semibold" scope="col">
-                  Feature
-                </th>
-                {headers.map((h, i) => (
-                  <th
-                    key={h}
-                    scope="col"
-                    className={`p-4 text-left text-sm font-semibold ${
-                      i === 0 ? "text-foreground" : "text-muted-foreground"
-                    }`}
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.label} className="border-b last:border-b-0">
-                  <th
-                    scope="row"
-                    className="p-4 text-left align-top text-sm font-medium"
-                  >
-                    {row.label}
-                  </th>
-                  {row.cells.map((cell, i) => (
-                    <td key={i} className="p-4 align-top">
-                      {renderCell(cell)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <p className="text-muted-foreground mx-auto mt-8 max-w-2xl text-center text-sm">
-          Pricing and feature availability as publicly listed on each
-          vendor&apos;s website. Last updated May 12, 2026.
-        </p>
-      </div>
-    </section>
+    <VsSection
+      eyebrow="Compare"
+      title="FasterFixes vs. BugHerd"
+      intro="Side-by-side comparison based on each product's public documentation and pricing page."
+    >
+      <VsComparisonTable
+        competitorName="BugHerd"
+        rows={rows}
+        footnote="Pricing and feature availability as publicly listed on each vendor's website. Last updated Nov 12, 2026."
+      />
+    </VsSection>
   );
 }

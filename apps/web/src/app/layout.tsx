@@ -1,18 +1,24 @@
 import { APP_URL } from "@/app/_constants/app";
-import { SITE_META_DESCRIPTION, SITE_NAME } from "@/app/_constants/seo";
-import { TRPCProviderWrapper as TRPCProvider } from "@/lib/trpc/trpc-provider";
-import { FeedbackProvider } from "@fasterfixes/react";
+import {
+  OG_IMAGE_SIZE,
+  SITE_META_DESCRIPTION,
+  SITE_NAME,
+  SITE_OG_LOCALE,
+  SITE_TAGLINE,
+} from "@/app/_constants/seo";
+import { TRPCProviderWrapper as TRPCProvider } from "@/lib/trpc/trpc-provider.client";
+import { isCloud } from "@/utils/environment/env";
 import { Analytics } from "@vercel/analytics/next";
 import "@workspace/ui/globals.css";
 import { RootProvider } from "fumadocs-ui/provider/next";
 import type { Metadata } from "next";
-import { ThemeProvider } from "next-themes";
 import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
-import Script from "next/script";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
-import { StopImpersonateButton } from "./_features/auth/stop-impersonate-button/stop-impersonate-button.client";
-import { ConsentProvider } from "./_features/c15t/consent-provider";
+import { StopImpersonateButton } from "./_domains/auth/stop-impersonate-button/stop-impersonate-button.client";
+import { AppFeedbackProvider } from "./_providers/app-feedback-provider.client";
+import { ConsentProvider } from "./_providers/consent-provider.client";
+import { ThemeProvider } from "./_providers/theme-provider.client";
 
 const fontSans = Space_Grotesk({
   subsets: ["latin"],
@@ -24,6 +30,15 @@ const fontMono = JetBrains_Mono({
   variable: "--font-mono",
 });
 
+// Pages outside `(public)` set no social metadata of their own and share the
+// home page's card.
+const defaultOgImage = {
+  url: "/og",
+  ...OG_IMAGE_SIZE,
+  alt: `${SITE_NAME}: ${SITE_TAGLINE}`,
+  type: "image/png",
+};
+
 export const metadata: Metadata = {
   metadataBase: new URL(APP_URL),
   title: {
@@ -34,10 +49,12 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
-    locale: "en_US",
+    locale: SITE_OG_LOCALE,
+    images: [defaultOgImage],
   },
   twitter: {
     card: "summary_large_image",
+    images: [defaultOgImage],
   },
   robots: {
     index: true,
@@ -64,30 +81,15 @@ export default function RootLayout({
       <body
         className={`${fontSans.variable} ${fontMono.variable} flex min-h-screen flex-col font-sans antialiased`}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          enableColorScheme
-        >
+        <ThemeProvider>
           <ConsentProvider>
             <TRPCProvider>
               <NuqsAdapter>
                 <StopImpersonateButton />
 
-                <FeedbackProvider
-                  projectId={process.env.NEXT_PUBLIC_FF_API_KEY ?? ""}
-                  apiOrigin={process.env.NEXT_PUBLIC_FF_API_ORIGIN}
-                  classNames={{
-                    button:
-                      "bg-primary text-primary-foreground hover:bg-primary/90",
-                  }}
-                  position="bottom-right"
-                  captureDiagnostics={true}
-                >
+                <AppFeedbackProvider>
                   <RootProvider>{children}</RootProvider>
-                </FeedbackProvider>
+                </AppFeedbackProvider>
 
                 <Toaster />
               </NuqsAdapter>
@@ -95,13 +97,7 @@ export default function RootLayout({
           </ConsentProvider>
         </ThemeProvider>
 
-        <Analytics />
-        <Script
-          defer
-          src="https://umami-analytics-swart.vercel.app/script.js"
-          data-website-id="8308ff4b-0aab-4cee-9042-359d0217a5e8"
-          strategy="afterInteractive"
-        />
+        {isCloud() && <Analytics />}
       </body>
     </html>
   );

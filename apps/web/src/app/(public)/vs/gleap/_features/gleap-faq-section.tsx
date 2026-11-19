@@ -1,4 +1,9 @@
-import type { FaqItem } from "@/app/_features/seo/faq-schema";
+import {
+  PLAN_LIMITS,
+  PLAN_PRICES,
+  SubscriptionPlanName,
+} from "@/app/_domains/subscription";
+import type { FaqItem } from "@/app/_components/seo/faq-schema";
 import {
   Accordion,
   AccordionContent,
@@ -6,11 +11,16 @@ import {
   AccordionTrigger,
 } from "@workspace/ui/components/accordion";
 
+const proPlan = PLAN_LIMITS[SubscriptionPlanName.Pro];
+const proPrice = PLAN_PRICES[SubscriptionPlanName.Pro];
 export const gleapFaqs: FaqItem[] = [
   {
+    question: "What is the best Gleap alternative?",
+    answer: `For bug reporting, FasterFixes: it is the only Gleap alternative you can self-host for $0, and the hosted Pro plan is $${proPrice}/mo flat for up to ${proPlan.seats} members. Every Feedback carries the DOM selector, React component tree, console logs, and network requests, readable by Claude Code and Cursor over MCP. If you need live chat or mobile SDKs, Gleap remains the better fit.`,
+  },
+  {
     question: "Is FasterFixes a free Gleap alternative?",
-    answer:
-      "Yes. Free to self-host with no member limits. Hosted Pro plan is $20/mo flat for up to 5 members.",
+    answer: `Yes. Free to self-host with no member limits. Hosted Pro plan is $${proPrice}/mo flat for up to ${proPlan.seats} members.`,
   },
   {
     question: "Can I self-host FasterFixes?",
@@ -20,12 +30,12 @@ export const gleapFaqs: FaqItem[] = [
   {
     question: "Does FasterFixes have mobile SDKs?",
     answer:
-      "No. Web and React/Next.js only. No iOS, Android, Flutter, or React Native SDKs.",
+      "No. FasterFixes is web only: a script tag for any website, plus packages for React, Vue, Angular, and Svelte. No iOS, Android, Flutter, or React Native SDKs.",
   },
   {
     question: "How does FasterFixes integrate with Claude Code and Cursor?",
     answer:
-      "Via a built-in MCP server. Query your feedback queue directly from your terminal or IDE — no browser needed.",
+      "Via a built-in MCP server. Query your feedback queue directly from your terminal or IDE, no browser needed.",
   },
   {
     question: "Does FasterFixes support customer support or live chat?",
@@ -35,7 +45,7 @@ export const gleapFaqs: FaqItem[] = [
   {
     question: "Why did Gleap pivot to customer support?",
     answer:
-      "Gleap expanded to compete in the larger customer support market — adding Kai AI, ticketing, and multichannel messaging to position alongside Intercom and Zendesk.",
+      "Gleap expanded to compete in the larger customer support market, adding Kai AI, ticketing, and multichannel messaging to position alongside Intercom and Zendesk.",
   },
 ];
 
@@ -57,7 +67,7 @@ export function GleapFaqSection() {
                   {faq.question}
                 </AccordionTrigger>
                 <AccordionContent>
-                  <p className="text-muted-foreground text-lg md:text-xl">
+                  <p className="text-lg text-muted-foreground md:text-xl">
                     {faq.answer}
                   </p>
                 </AccordionContent>

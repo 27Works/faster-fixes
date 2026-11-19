@@ -1,21 +1,25 @@
 "use client";
 
 import { DndContext } from "@dnd-kit/core";
-import { Checkbox } from "@workspace/ui/components/checkbox";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@workspace/ui/components/tabs";
+import { cn } from "@workspace/ui/lib/utils";
 import * as React from "react";
-import type { GetFeedbackOutput } from "../get-feedback.trpc.query";
+import type { ListFeedbackOutput } from "../../_services/list-feedback";
 import { KanbanCard } from "./kanban-card.client";
+import { getFeedbackStatusAppearance } from "@/app/_domains/feedback/_components/feedback-status-appearance";
+import { ColumnSelectCheckbox } from "./column-select-checkbox.client";
 
-type FeedbackItem = GetFeedbackOutput[number];
+type FeedbackItem = ListFeedbackOutput[number];
+
+type KanbanColumn = { id: string; title: string };
 
 type KanbanMobileProps = {
-  columns: readonly { id: string; title: string }[];
+  columns: readonly [KanbanColumn, ...KanbanColumn[]];
   grouped: Record<string, FeedbackItem[]>;
   selectedIds: Set<string>;
   toolbar: React.ReactNode;
@@ -33,9 +37,7 @@ export function KanbanMobile({
   onToggleSelectAll,
   onSelectFeedback,
 }: KanbanMobileProps) {
-  const [activeColumn, setActiveColumn] = React.useState<string>(
-    columns[0]!.id,
-  );
+  const [activeColumn, setActiveColumn] = React.useState<string>(columns[0].id);
 
   return (
     <Tabs
@@ -46,6 +48,12 @@ export function KanbanMobile({
       <TabsList className="w-full">
         {columns.map((col) => (
           <TabsTrigger key={col.id} value={col.id}>
+            <span
+              className={cn(
+                "mr-1.5 size-2 rounded-full",
+                getFeedbackStatusAppearance(col.id).swatchClassName,
+              )}
+            />
             {col.title}
             <span className="ml-1.5 tabular-nums">
               ({(grouped[col.id] ?? []).length})
@@ -57,9 +65,9 @@ export function KanbanMobile({
       {columns.map((col) => {
         const items = grouped[col.id] ?? [];
         const itemIds = items.map((i) => i.id);
-        const allSelected =
-          itemIds.length > 0 && itemIds.every((id) => selectedIds.has(id));
-        const someSelected = itemIds.some((id) => selectedIds.has(id));
+        const selectedCount = itemIds.filter((id) =>
+          selectedIds.has(id),
+        ).length;
 
         return (
           <TabsContent
@@ -67,22 +75,29 @@ export function KanbanMobile({
             value={col.id}
             className="flex flex-col gap-4"
           >
-            <div className="flex items-center gap-2">
-              <Checkbox
-                checked={
-                  allSelected ? true : someSelected ? "indeterminate" : false
-                }
-                onCheckedChange={() => onToggleSelectAll(col.id, itemIds)}
-              />
-              <span className="text-muted-foreground text-xs">Select all</span>
-            </div>
+            {items.length > 0 && (
+              // pl-3 lines this checkbox up with the ones inside the cards.
+              <label className="flex h-7 items-center gap-2 pl-3 text-xs text-muted-foreground">
+                <ColumnSelectCheckbox
+                  columnTitle={col.title}
+                  itemIds={itemIds}
+                  selectedIds={selectedIds}
+                  onToggle={() => onToggleSelectAll(col.id, itemIds)}
+                />
+                <span className="tabular-nums">
+                  {selectedCount === 0
+                    ? `Select all ${items.length}`
+                    : `${selectedCount} of ${items.length} selected`}
+                </span>
+              </label>
+            )}
 
             {toolbar}
 
             <DndContext>
               <div className="flex flex-col gap-2">
                 {items.length === 0 ? (
-                  <div className="text-muted-foreground py-8 text-center text-sm">
+                  <div className="py-8 text-center text-sm text-muted-foreground">
                     No items
                   </div>
                 ) : (
@@ -91,7 +106,9 @@ export function KanbanMobile({
                       key={item.id}
                       feedback={item}
                       isSelected={selectedIds.has(item.id)}
-                      selectionMode={selectedIds.size > 0}
+                      // No drop target on mobile: status changes go through the panel or the bulk toolbar.
+                      isDraggable={false}
+                      isSortable={false}
                       onToggleSelect={onToggleSelect}
                       onSelect={onSelectFeedback}
                     />
